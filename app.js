@@ -1,38 +1,28 @@
-// Pastel Colors for roulette segments
-const PASTEL_COLORS = [
-    '#FFB3D9', // Pink
-    '#B3D9FF', // Blue
-    '#B3FFD9', // Green
-    '#FFFFB3', // Yellow
-    '#D9B3FF', // Purple
-    '#FFD9B3', // Peach
-    '#C9FFB3', // Light Green
-    '#FFB3E5', // Magenta
-];
-
-class RouletteApp {
+// 小学6年生レベルの算数計算ドリルアプリ
+class MathDrillApp {
     constructor() {
-        this.options = [];
-        this.isSpinning = false;
-        this.currentRotation = 0;
+        this.currentQuestion = null;
+        this.score = 0;
+        this.total = 0;
         this.appContainer = document.getElementById('app');
         
         this.render();
         this.attachEventListeners();
+        this.nextQuestion();
     }
     
+    // アプリ全体のデザイン（CSS）を注入
     createStyles() {
         const style = document.createElement('style');
         style.textContent = `
             :root {
-                --pastel-pink: #FFB3D9;
                 --pastel-blue: #B3D9FF;
-                --pastel-green: #B3FFD9;
-                --pastel-yellow: #FFFFB3;
                 --pastel-purple: #D9B3FF;
-                --pastel-peach: #FFD9B3;
-                --light-gray: #F5F5F5;
+                --pastel-yellow: #FFFFB3;
+                --pastel-green: #B3FFD9;
                 --dark-gray: #333333;
+                --success-color: #2ecc71;
+                --error-color: #e74c3c;
             }
             
             * {
@@ -43,7 +33,7 @@ class RouletteApp {
             
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: linear-gradient(135deg, #FFB3D9 0%, #B3D9FF 50%, #B3FFD9 100%);
+                background: linear-gradient(135deg, var(--pastel-blue) 0%, var(--pastel-purple) 100%);
                 min-height: 100vh;
                 padding: 20px;
                 display: flex;
@@ -55,532 +45,381 @@ class RouletteApp {
                 background: white;
                 border-radius: 20px;
                 padding: 40px;
-                max-width: 600px;
+                max-width: 550px;
                 width: 100%;
                 box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+                text-align: center;
             }
             
             h1 {
-                text-align: center;
                 color: var(--dark-gray);
+                margin-bottom: 5px;
+                font-size: 2em;
+            }
+            
+            .subtitle {
+                color: #666;
+                font-size: 0.9em;
+                margin-bottom: 25px;
+            }
+            
+            .score-board {
+                display: flex;
+                justify-content: center;
+                gap: 20px;
                 margin-bottom: 30px;
-                font-size: 2.5em;
+                font-weight: bold;
+                color: var(--dark-gray);
+                background: #f9f9f9;
+                padding: 10px;
+                border-radius: 10px;
+            }
+            
+            .formula-section {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 12px;
+                min-height: 120px;
+                margin-bottom: 30px;
+                font-size: 2.4em;
+                color: var(--dark-gray);
+                font-weight: 600;
+                background: #fffdf0;
+                border: 2px dashed var(--pastel-yellow);
+                border-radius: 15px;
+                padding: 20px;
+            }
+            
+            /* 分数を縦に綺麗に並べるためのスタイル */
+            .fraction-container {
+                display: inline-flex;
+                flex-direction: column;
+                align-items: center;
+                vertical-align: middle;
+                line-height: 1.1;
+                padding: 0 6px;
+            }
+            .numerator {
+                font-size: 0.8em;
+                padding-bottom: 2px;
+            }
+            .fraction-line {
+                width: 100%;
+                height: 3px;
+                background-color: var(--dark-gray);
+                border-radius: 2px;
+            }
+            .denominator {
+                font-size: 0.8em;
+                padding-top: 2px;
             }
             
             .input-section {
                 margin-bottom: 30px;
             }
             
-            .input-group {
-                display: flex;
-                gap: 10px;
-                margin-bottom: 15px;
-            }
-            
-            input[type="text"] {
-                flex: 1;
-                padding: 12px 16px;
-                border: 2px solid var(--pastel-pink);
-                border-radius: 10px;
-                font-size: 1em;
-                transition: all 0.3s ease;
-            }
-            
-            input[type="text"]:focus {
+            .answer-input {
+                width: 100%;
+                max-width: 240px;
+                padding: 15px;
+                font-size: 1.6em;
+                text-align: center;
+                border: 3px solid var(--pastel-blue);
+                border-radius: 12px;
                 outline: none;
-                border-color: #FF69B4;
-                box-shadow: 0 0 10px rgba(255, 105, 180, 0.2);
-            }
-            
-            button {
                 transition: all 0.3s ease;
-                border: none;
-                border-radius: 10px;
+            }
+            
+            .answer-input:focus {
+                border-color: #4a90e2;
+                box-shadow: 0 0 10px rgba(74, 144, 226, 0.2);
+            }
+            
+            /* ボタンのスタイル */
+            button {
+                padding: 14px 35px;
+                font-size: 1.2em;
                 font-weight: bold;
+                border: none;
+                border-radius: 12px;
                 cursor: pointer;
+                transition: all 0.2s ease;
+                width: 100%;
+                max-width: 240px;
             }
             
-            .btn-add {
-                padding: 12px 24px;
-                background: linear-gradient(135deg, var(--pastel-pink), #FFB3D9);
+            .btn-submit {
+                background: linear-gradient(135deg, #FFB3D9, #ff94c2);
                 color: white;
-                font-size: 1em;
+                box-shadow: 0 4px 15px rgba(255, 179, 217, 0.4);
             }
             
-            .btn-add:hover {
+            .btn-submit:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 5px 15px rgba(255, 105, 180, 0.3);
+                box-shadow: 0 6px 20px rgba(255, 179, 217, 0.6);
             }
             
-            .btn-add:active {
+            .btn-next {
+                background: linear-gradient(135deg, var(--pastel-green), #8affc1);
+                color: var(--dark-gray);
+                box-shadow: 0 4px 15px rgba(179, 255, 217, 0.4);
+                display: none;
+            }
+            
+            .btn-next:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(179, 255, 217, 0.6);
+            }
+            
+            button:active {
                 transform: translateY(0);
             }
             
-            .btn-clear {
-                width: 100%;
-                padding: 10px;
-                background: #E8E8E8;
-                color: var(--dark-gray);
-                font-size: 0.9em;
-            }
-            
-            .btn-clear:hover {
-                background: #D0D0D0;
-            }
-            
-            .options-list {
-                margin-bottom: 30px;
-            }
-            
-            .options-list h3 {
-                color: var(--dark-gray);
-                margin-bottom: 15px;
-                font-size: 1.1em;
-            }
-            
-            .options-list ul {
-                list-style: none;
-                display: flex;
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-            
-            .option-tag {
-                background: linear-gradient(135deg, var(--pastel-blue), #B3D9FF);
-                color: var(--dark-gray);
-                padding: 8px 16px;
-                border-radius: 20px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                font-weight: 500;
-                animation: slideIn 0.3s ease;
-            }
-            
-            .option-tag button {
-                background: rgba(255, 255, 255, 0.6);
-                width: 24px;
-                height: 24px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: bold;
-                color: var(--dark-gray);
-                padding: 0;
-            }
-            
-            .option-tag button:hover {
-                background: rgba(255, 255, 255, 0.9);
-            }
-            
-            @keyframes slideIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(-10px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-            
-            .roulette-section {
+            /* 結果アニメーション */
+            .result-section {
+                min-height: 80px;
+                margin-top: 20px;
                 display: flex;
                 flex-direction: column;
-                align-items: center;
-                margin-bottom: 30px;
-            }
-            
-            .roulette-container {
-                position: relative;
-                width: 300px;
-                height: 300px;
-                margin-bottom: 30px;
-            }
-            
-            canvas {
-                width: 300px;
-                height: 300px;
-                display: block;
-                border-radius: 50%;
-                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-            }
-            
-            .needle {
-                position: absolute;
-                top: 0;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 0;
-                height: 0;
-                border-left: 12px solid transparent;
-                border-right: 12px solid transparent;
-                border-top: 30px solid #FF6B9D;
-                z-index: 10;
-                filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-            }
-            
-            .result-display {
-                text-align: center;
-                min-height: 80px;
-                display: flex;
-                align-items: center;
                 justify-content: center;
+                align-items: center;
             }
             
-            .result-display h2 {
-                font-size: 1.5em;
-                color: var(--dark-gray);
-                animation: popIn 0.5s ease;
+            .result-message {
+                font-size: 2em;
+                font-weight: bold;
+                animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+            
+            .result-correct {
+                color: var(--success-color);
+            }
+            
+            .result-incorrect {
+                color: var(--error-color);
             }
             
             @keyframes popIn {
-                0% {
-                    opacity: 0;
-                    transform: scale(0.5);
-                }
-                100% {
-                    opacity: 1;
-                    transform: scale(1);
-                }
+                0% { opacity: 0; transform: scale(0.7); }
+                100% { opacity: 1; transform: scale(1); }
             }
             
-            .btn-start {
-                width: 100%;
-                padding: 16px;
-                background: linear-gradient(135deg, var(--pastel-green), #B3FFD9);
-                color: var(--dark-gray);
-                font-size: 1.2em;
-            }
-            
-            .btn-start:hover:not(:disabled) {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 20px rgba(179, 255, 217, 0.4);
-            }
-            
-            .btn-start:active:not(:disabled) {
-                transform: translateY(0);
-            }
-            
-            .btn-start:disabled {
-                opacity: 0.5;
-                cursor: not-allowed;
-            }
-            
-            @media (max-width: 600px) {
-                .container {
-                    padding: 20px;
-                }
-                
-                h1 {
-                    font-size: 2em;
-                }
-                
-                .roulette-container {
-                    width: 250px;
-                    height: 250px;
-                }
-                
-                canvas {
-                    width: 250px;
-                    height: 250px;
-                }
+            @media (max-width: 500px) {
+                .container { padding: 25px; }
+                .formula-section { font-size: 1.8em; min-height: 100px; }
+                h1 { font-size: 1.6em; }
             }
         `;
         document.head.appendChild(style);
     }
     
+    // HTML構造のレンダリング
     render() {
         this.createStyles();
         
         const html = `
             <div class="container">
-                <h1>🎡 ルーレットアプリ</h1>
+                <h1>🧮 算数計算ドリル</h1>
+                <div class="subtitle">小学6年生レベル（分数・小数の混合計算）</div>
+                
+                <div class="score-board">
+                    <div>正解数: <span id="scoreText">0</span></div>
+                    <div>解いた数: <span id="totalText">0</span></div>
+                </div>
+                
+                <div class="formula-section" id="formulaContainer">
+                    </div>
                 
                 <div class="input-section">
-                    <div class="input-group">
-                        <input 
-                            type="text" 
-                            id="optionInput" 
-                            placeholder="候補を入力してください"
-                            autocomplete="off"
-                        >
-                        <button id="addBtn" class="btn-add">追加</button>
-                    </div>
-                    <button id="clearBtn" class="btn-clear">リセット</button>
+                    <input 
+                        type="number" 
+                        step="any" 
+                        id="answerInput" 
+                        class="answer-input" 
+                        placeholder="答えを入力"
+                        autocomplete="off"
+                    >
                 </div>
                 
-                <div class="options-list">
-                    <h3>候補一覧</h3>
-                    <ul id="optionsList"></ul>
+                <div style="display: flex; justify-content: center;">
+                    <button id="submitBtn" class="btn-submit">採点</button>
+                    <button id="nextBtn" class="btn-next">次の問題へ</button>
                 </div>
                 
-                <div class="roulette-section">
-                    <div class="roulette-container">
-                        <canvas id="rouletteCanvas" width="400" height="400"></canvas>
-                        <div class="needle"></div>
-                    </div>
-                    <div class="result-display" id="resultDisplay"></div>
-                </div>
-                
-                <button id="startBtn" class="btn-start" disabled>スタート</button>
+                <div class="result-section" id="resultContainer"></div>
             </div>
         `;
         
         this.appContainer.innerHTML = html;
         
-        this.optionInput = document.getElementById('optionInput');
-        this.addBtn = document.getElementById('addBtn');
-        this.clearBtn = document.getElementById('clearBtn');
-        this.optionsList = document.getElementById('optionsList');
-        this.startBtn = document.getElementById('startBtn');
-        this.canvas = document.getElementById('rouletteCanvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.resultDisplay = document.getElementById('resultDisplay');
+        this.formulaContainer = document.getElementById('formulaContainer');
+        this.answerInput = document.getElementById('answerInput');
+        this.submitBtn = document.getElementById('submitBtn');
+        this.nextBtn = document.getElementById('nextBtn');
+        this.resultContainer = document.getElementById('resultContainer');
+        this.scoreText = document.getElementById('scoreText');
+        this.totalText = document.getElementById('totalText');
     }
     
     attachEventListeners() {
-        this.addBtn.addEventListener('click', () => this.addOption());
-        this.optionInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.addOption();
+        this.submitBtn.addEventListener('click', () => this.checkAnswer());
+        
+        // Enterキーでも採点・次へ進むができるように設定
+        this.answerInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                if (this.submitBtn.style.display !== 'none') {
+                    this.checkAnswer();
+                } else {
+                    this.nextQuestion();
+                }
+            }
         });
-        this.clearBtn.addEventListener('click', () => this.resetApp());
-        this.startBtn.addEventListener('click', () => this.spin());
+        
+        this.nextBtn.addEventListener('click', () => this.nextQuestion());
     }
     
-    addOption() {
-        const value = this.optionInput.value.trim();
-        if (value === '') {
-            alert('候補を入力してください');
+    // 小学6年生レベルの問題をランダムに自動生成するロジック
+    generateQuestion() {
+        const types = ['decimal-mul', 'decimal-div', 'mixed-fraction', 'mixed-nested'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        
+        let html = '';
+        let answer = 0;
+        
+        switch(type) {
+            case 'decimal-mul': {
+                // 小数の掛け算 (例: 2.4 × 1.5)
+                const a = (Math.floor(Math.random() * 80) + 11) / 10; // 1.1 ~ 9.0
+                const b = [0.2, 0.4, 0.5, 0.6, 0.8, 1.2, 1.5, 2.5][Math.floor(Math.random() * 8)];
+                answer = a * b;
+                html = `<span>${a} × ${b} ＝</span>`;
+                break;
+            }
+            case 'decimal-div': {
+                // 小数の割り算 (割り切れるものを逆算して生成)
+                const b = [0.3, 0.4, 0.5, 0.6, 0.8, 1.2, 1.5][Math.floor(Math.random() * 7)];
+                const ans = (Math.floor(Math.random() * 25) + 5) / 10; // 0.5 ~ 2.9
+                const a = Math.round(b * ans * 100) / 100;
+                answer = ans;
+                html = `<span>${a} ÷ ${b} ＝</span>`;
+                break;
+            }
+            case 'mixed-fraction': {
+                // 分数と小数の混ざった計算 (答えが整数か小数にきれいに収まるもの)
+                const fractions = [
+                    {n: 1, d: 2, v: 0.5},
+                    {n: 1, d: 4, v: 0.25},
+                    {n: 3, d: 4, v: 0.75},
+                    {n: 1, d: 5, v: 0.2},
+                    {n: 2, d: 5, v: 0.4},
+                    {n: 3, d: 5, v: 0.6},
+                    {n: 4, d: 5, v: 0.8}
+                ];
+                const f = fractions[Math.floor(Math.random() * fractions.length)];
+                const b = (Math.floor(Math.random() * 12) + 1) / 10; // 0.1 ~ 1.2
+                const op = ['＋', '－', '×'][Math.floor(Math.random() * 3)];
+                
+                if (op === '＋') {
+                    answer = f.v + b;
+                    html = `${this.renderFraction(f.n, f.d)} <span> ＋ ${b} ＝</span>`;
+                } else if (op === '－') {
+                    if (b > f.v) {
+                        answer = b - f.v;
+                        html = `<span>${b} － </span> ${this.renderFraction(f.n, f.d)} <span> ＝</span>`;
+                    } else {
+                        answer = f.v - b;
+                        html = `${this.renderFraction(f.n, f.d)} <span> － ${b} ＝</span>`;
+                    }
+                } else {
+                    answer = f.v * b;
+                    html = `${this.renderFraction(f.n, f.d)} <span> × ${b} ＝</span>`;
+                }
+                break;
+            }
+            case 'mixed-nested': {
+                // カッコのある複雑な四則混合計算
+                const op = Math.random() > 0.5 ? '＋' : '－';
+                if (op === '＋') {
+                    const a = (Math.floor(Math.random() * 30) + 10) / 10;
+                    const b = (Math.floor(Math.random() * 30) + 10) / 10;
+                    const c = [0.2, 0.5, 2, 3][Math.floor(Math.random() * 4)];
+                    answer = (a + b) * c;
+                    html = `<span>（ ${a} ＋ ${b} ） × ${c} ＝</span>`;
+                } else {
+                    const b = (Math.floor(Math.random() * 20) + 10) / 10;
+                    const ans = (Math.floor(Math.random() * 5) + 1);
+                    const c = [0.4, 0.5, 0.6, 0.8, 1.2][Math.floor(Math.random() * 5)];
+                    const diff = Math.round(ans * c * 10) / 10;
+                    const a = Math.round((diff + b) * 10) / 10;
+                    answer = ans;
+                    html = `<span>（ ${a} － ${b} ） ÷ ${c} ＝</span>`;
+                }
+                break;
+            }
+        }
+        
+        // JavaScriptの浮動小数点数による計算誤差を修正 (小数点第3位まで丸める)
+        answer = Math.round(answer * 1000) / 1000;
+        return { html, answer };
+    }
+    
+    // 分数用HTMLの生成
+    renderFraction(n, d) {
+        return `
+            <div class="fraction-container">
+                <span class="numerator">${n}</span>
+                <span class="fraction-line"></span>
+                <span class="denominator">${d}</span>
+            </div>
+        `;
+    }
+    
+    // 次の問題をセット
+    nextQuestion() {
+        this.currentQuestion = this.generateQuestion();
+        this.formulaContainer.innerHTML = this.currentQuestion.html;
+        this.answerInput.value = '';
+        this.answerInput.disabled = false;
+        this.resultContainer.innerHTML = '';
+        
+        this.submitBtn.style.display = 'block';
+        this.nextBtn.style.display = 'none';
+        this.answerInput.focus();
+    }
+    
+    // 採点処理
+    checkAnswer() {
+        const userInput = this.answerInput.value.trim();
+        if (userInput === '') {
+            alert('答えを入力してください！');
             return;
         }
         
-        if (this.options.includes(value)) {
-            alert('同じ候補は追加できません');
-            return;
-        }
+        const userNum = Math.round(parseFloat(userInput) * 1000) / 1000;
+        const isCorrect = userNum === this.currentQuestion.answer;
         
-        if (this.options.length >= 8) {
-            alert('候補は最大8個までです');
-            return;
-        }
+        this.total++;
+        this.totalText.textContent = this.total;
         
-        this.options.push(value);
-        this.optionInput.value = '';
-        this.updateUI();
-    }
-    
-    removeOption(index) {
-        this.options.splice(index, 1);
-        this.updateUI();
-    }
-    
-    updateUI() {
-        // Update options list
-        this.optionsList.innerHTML = '';
-        this.options.forEach((option, index) => {
-            const li = document.createElement('li');
-            li.className = 'option-tag';
-            li.innerHTML = `
-                ${option}
-                <button onclick="window.app.removeOption(${index})">×</button>
+        this.answerInput.disabled = true;
+        this.submitBtn.style.display = 'none';
+        this.nextBtn.style.display = 'block';
+        
+        if (isCorrect) {
+            this.score++;
+            this.scoreText.textContent = this.score;
+            this.resultContainer.innerHTML = `<div class="result-message result-correct">🎉 おめでとう！🎉</div>`;
+        } else {
+            this.resultContainer.innerHTML = `
+                <div class="result-message result-incorrect">❌ 不正解！</div>
+                <div style="margin-top: 8px; color: #666; font-size: 0.9em;">正解は <strong>${this.currentQuestion.answer}</strong> でした</div>
             `;
-            this.optionsList.appendChild(li);
-        });
-        
-        // Enable/disable start button
-        this.startBtn.disabled = this.options.length < 2;
-        
-        // Redraw roulette
-        this.drawRoulette();
-        this.resultDisplay.innerHTML = '';
-    }
-    
-    drawRoulette() {
-        if (this.options.length === 0) {
-            this.ctx.fillStyle = '#E8E8E8';
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            this.ctx.fillStyle = '#999';
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.font = '16px sans-serif';
-            this.ctx.fillText('候補を2個以上追加してください', 200, 200);
-            return;
         }
-        
-        const centerX = this.canvas.width / 2;
-        const centerY = this.canvas.height / 2;
-        const radius = 190;
-        const sliceAngle = (2 * Math.PI) / this.options.length;
-        
-        // Clear canvas
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Draw circle background
-        this.ctx.fillStyle = '#FFF';
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-        this.ctx.fill();
-        this.ctx.strokeStyle = '#DDD';
-        this.ctx.lineWidth = 2;
-        this.ctx.stroke();
-        
-        // Draw segments
-        this.options.forEach((option, index) => {
-            const startAngle = index * sliceAngle + this.currentRotation;
-            const endAngle = startAngle + sliceAngle;
-            
-            // Draw segment
-            this.ctx.beginPath();
-            this.ctx.moveTo(centerX, centerY);
-            this.ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-            this.ctx.closePath();
-            this.ctx.fillStyle = PASTEL_COLORS[index % PASTEL_COLORS.length];
-            this.ctx.fill();
-            this.ctx.strokeStyle = '#FFF';
-            this.ctx.lineWidth = 3;
-            this.ctx.stroke();
-            
-            // Draw text
-            const textAngle = startAngle + sliceAngle / 2;
-            const textX = centerX + Math.cos(textAngle) * (radius * 0.65);
-            const textY = centerY + Math.sin(textAngle) * (radius * 0.65);
-            
-            this.ctx.save();
-            this.ctx.translate(textX, textY);
-            this.ctx.rotate(textAngle + Math.PI / 2);
-            this.ctx.fillStyle = '#333';
-            this.ctx.font = 'bold 14px sans-serif';
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            
-            // Wrap text if needed
-            const maxWidth = radius * 0.4;
-            this.wrapText(this.ctx, option, 0, 0, maxWidth, 18);
-            
-            this.ctx.restore();
-        });
-        
-        // Draw center circle
-        this.ctx.fillStyle = '#FFF';
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, 25, 0, 2 * Math.PI);
-        this.ctx.fill();
-        this.ctx.strokeStyle = '#FF6B9D';
-        this.ctx.lineWidth = 3;
-        this.ctx.stroke();
-    }
-    
-    wrapText(context, text, x, y, maxWidth, lineHeight) {
-        const words = text.split(' ');
-        let line = '';
-        let lines = [];
-        
-        for (let i = 0; i < words.length; i++) {
-            const testLine = line + words[i] + ' ';
-            const metrics = context.measureText(testLine);
-            const testWidth = metrics.width;
-            
-            if (testWidth > maxWidth && i > 0) {
-                lines.push(line);
-                line = words[i] + ' ';
-            } else {
-                line = testLine;
-            }
-        }
-        lines.push(line);
-        
-        const totalHeight = lines.length * lineHeight;
-        let currentY = y - (totalHeight / 2) + lineHeight / 2;
-        
-        lines.forEach(line => {
-            context.fillText(line.trim(), x, currentY);
-            currentY += lineHeight;
-        });
-    }
-    
-    spin() {
-        if (this.isSpinning || this.options.length < 2) return;
-        
-        this.isSpinning = true;
-        this.startBtn.disabled = true;
-        this.resultDisplay.innerHTML = '';
-        
-        // Store the target index before spinning
-        this.targetIndex = Math.floor(Math.random() * this.options.length);
-        
-        // Fast spinning for 3 seconds
-        const spinDuration = 3000; // 3 seconds
-        const startTime = Date.now();
-        const spinSpeed = 150; // 速度を150に上げました（数字が大きいほど速い）
-        
-        const spinAnimation = () => {
-            const elapsed = Date.now() - startTime;
-            
-            if (elapsed < spinDuration) {
-                this.currentRotation += (spinSpeed * 2 * Math.PI) / 1000 * 0.016; // smooth rotation
-                this.drawRoulette();
-                requestAnimationFrame(spinAnimation);
-            } else {
-                // After 3 seconds, slow down for 2 seconds
-                this.slowDownSpin();
-            }
-        };
-        
-        spinAnimation();
-    }
-    
-    slowDownSpin() {
-        const slowDuration = 2000; // 2 seconds
-        const startTime = Date.now();
-        
-        // Calculate the target rotation to land on the needle
-        const sliceAngle = (2 * Math.PI) / this.options.length;
-        // The needle is at the top (0 radians), so we need the segment to point there
-        // Segment 0 should point to top: finalRotation = 0
-        // Segment targetIndex should point to top: finalRotation = -targetIndex * sliceAngle
-        const finalRotation = -this.targetIndex * sliceAngle;
-        const initialRotation = this.currentRotation;
-        
-        const slowAnimation = () => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / slowDuration, 1);
-            
-            // Ease out cubic for deceleration
-            const easeProgress = 1 - Math.pow(1 - progress, 3);
-            this.currentRotation = initialRotation + (finalRotation - initialRotation) * easeProgress;
-            
-            this.drawRoulette();
-            
-            if (elapsed < slowDuration) {
-                requestAnimationFrame(slowAnimation);
-            } else {
-                this.showResult();
-            }
-        };
-        
-        slowAnimation();
-    }
-    
-    showResult() {
-        const selectedOption = this.options[this.targetIndex];
-        this.resultDisplay.innerHTML = `<h2>🎉 ${selectedOption} 🎉</h2>`;
-        
-        this.isSpinning = false;
-        this.startBtn.disabled = false;
-    }
-    
-    resetApp() {
-        this.options = [];
-        this.currentRotation = 0;
-        this.optionInput.value = '';
-        this.resultDisplay.innerHTML = '';
-        this.updateUI();
     }
 }
 
-// Initialize app when DOM is ready
-let app;
+// DOMが読み込まれたらアプリを起動
 document.addEventListener('DOMContentLoaded', () => {
-    app = new RouletteApp();
+    window.app = new MathDrillApp();
 });
