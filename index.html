@@ -3,11 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webアプリ</title>
+    <title>マイアプリポータル</title>
+    <style>
+        /* メニュー画面全体のデザイン */
+        .app-menu {
+            text-align: center;
+            margin-top: 80px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .menu-title {
+            color: #333;
+            margin-bottom: 40px;
+            font-size: 2em;
+        }
+        .menu-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            flex-wrap: wrap;
+            padding: 0 20px;
+        }
+        .menu-btn {
+            padding: 20px 40px;
+            font-size: 1.3em;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .menu-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+        .menu-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* 各ボタンのカラー（アプリの雰囲気に合わせています） */
+        .btn-roulette { 
+            background: linear-gradient(135deg, #FFB3D9, #B3D9FF); 
+            color: #333; 
+        }
+        .btn-crane { 
+            background: linear-gradient(135deg, #1a1a2e, #ff7eb3); 
+            color: white;
+        }
+        
+        /* 「メニューに戻る」ボタンのスタイル */
+        .back-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            padding: 10px 18px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 9999;
+            display: none; /* 初期状態は非表示 */
+            font-weight: bold;
+            font-size: 0.9em;
+            transition: background 0.2s;
+        }
+        .back-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+        }
+    </style>
 </head>
 <body>
+
+    <button id="backBtn" class="back-btn" onclick="goToMenu()">🏠 メニューに戻る</button>
+
+    <div id="menuContainer" class="app-menu">
+        <h1 class="menu-title">🎮 あそぶアプリをえらんでね</h1>
+        <div class="menu-buttons">
+            <button class="menu-btn btn-roulette" onclick="loadApp('app.js')">🎡 ルーレット</button>
+            <button class="menu-btn btn-crane" onclick="loadApp('clanegame.js')">🛸 クレーンゲーム</button>
+        </div>
+    </div>
+
     <div id="app"></div>
 
-    <script src="app.js"></script>
+    <script>
+        // アプリを動的に読み込む関数
+        function loadApp(jsFileName) {
+            // メニュー画面を非表示にする
+            document.getElementById('menuContainer').style.display = 'none';
+            // 戻るボタンを表示する
+            document.getElementById('backBtn').style.display = 'block';
+            
+            // 新しく script タグを作って指定されたJSファイルを読み込む
+            const script = document.createElement('script');
+            script.src = jsFileName;
+            document.body.appendChild(script);
+        }
+
+        // メニューに戻る処理（ページを再読み込みして状態をクリアする）
+        function goToMenu() {
+            location.reload();
+        }
+    </script>
 </body>
 </html>
