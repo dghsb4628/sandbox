@@ -1,14 +1,28 @@
-// 小学6年生レベルの算数計算ドリルアプリ
-class MathDrillApp {
+// クレーンゲームアプリ
+class CraneGameApp {
     constructor() {
-        this.currentQuestion = null;
-        this.score = 0;
-        this.total = 0;
         this.appContainer = document.getElementById('app');
+        
+        // クレーンの位置と状態
+        this.craneX = 50; // 左からのパーセンテージ (0-100)
+        this.craneZ = 10; // 上からのパーセンテージ（奥行き表現） (0-40)
+        this.isMoving = false; // アーム降下中かどうか
+        
+        // キーボードの入力状態
+        this.keys = {
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false
+        };
+        
+        // 景品リスト
+        this.prizes = ['🧸', '🎁', '🐼', '🐰', '💎', '👑'];
         
         this.render();
         this.attachEventListeners();
-        this.nextQuestion();
+        this.startGameLoop();
+        this.scatterPrizes();
     }
     
     // アプリ全体のデザイン（CSS）を注入
@@ -16,13 +30,11 @@ class MathDrillApp {
         const style = document.createElement('style');
         style.textContent = `
             :root {
-                --pastel-blue: #B3D9FF;
-                --pastel-purple: #D9B3FF;
-                --pastel-yellow: #FFFFB3;
-                --pastel-green: #B3FFD9;
-                --dark-gray: #333333;
-                --success-color: #2ecc71;
-                --error-color: #e74c3c;
+                --arcade-pink: #ff7eb3;
+                --arcade-blue: #7eb3ff;
+                --machine-bg: #ffe6f2;
+                --dark-gray: #333;
+                --claw-color: #c0c0c0;
             }
             
             * {
@@ -33,182 +45,227 @@ class MathDrillApp {
             
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: linear-gradient(135deg, var(--pastel-blue) 0%, var(--pastel-purple) 100%);
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
                 min-height: 100vh;
                 padding: 20px;
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                color: var(--dark-gray);
             }
             
             .container {
                 background: white;
                 border-radius: 20px;
-                padding: 40px;
-                max-width: 550px;
+                padding: 30px;
                 width: 100%;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+                max-width: 450px;
+                box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
                 text-align: center;
             }
             
             h1 {
-                color: var(--dark-gray);
+                color: var(--arcade-pink);
                 margin-bottom: 5px;
                 font-size: 2em;
+                text-shadow: 2px 2px 0px rgba(255, 126, 179, 0.2);
             }
             
             .subtitle {
                 color: #666;
                 font-size: 0.9em;
-                margin-bottom: 25px;
+                margin-bottom: 20px;
             }
             
-            .score-board {
-                display: flex;
-                justify-content: center;
-                gap: 20px;
-                margin-bottom: 30px;
-                font-weight: bold;
-                color: var(--dark-gray);
-                background: #f9f9f9;
-                padding: 10px;
-                border-radius: 10px;
-            }
-            
-            .formula-section {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                gap: 12px;
-                min-height: 120px;
-                margin-bottom: 30px;
-                font-size: 2.4em;
-                color: var(--dark-gray);
-                font-weight: 600;
-                background: #fffdf0;
-                border: 2px dashed var(--pastel-yellow);
+            /* クレーンゲームの筐体画面 */
+            .game-screen {
+                position: relative;
+                width: 100%;
+                height: 400px;
+                background: var(--machine-bg);
+                border: 8px solid var(--arcade-pink);
                 border-radius: 15px;
-                padding: 20px;
+                border-bottom-width: 30px;
+                overflow: hidden;
+                margin-bottom: 20px;
+                box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
             }
             
-            /* 分数を縦に綺麗に並べるためのスタイル */
-            .fraction-container {
-                display: inline-flex;
+            /* 背景のストライプ模様 */
+            .game-screen::before {
+                content: '';
+                position: absolute;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 20px,
+                    rgba(255, 255, 255, 0.5) 20px,
+                    rgba(255, 255, 255, 0.5) 40px
+                );
+                z-index: 1;
+            }
+            
+            /* アーム全体のコンテナ */
+            .crane-system {
+                position: absolute;
+                top: 10%; /* Z軸（奥行き）で変化 */
+                left: 50%; /* X軸（左右）で変化 */
+                transform: translateX(-50%);
+                z-index: 10;
+                display: flex;
                 flex-direction: column;
                 align-items: center;
-                vertical-align: middle;
-                line-height: 1.1;
-                padding: 0 6px;
+                transition: top 0.1s, left 0.1s; /* キー操作用の滑らかな補間 */
             }
-            .numerator {
-                font-size: 0.8em;
-                padding-bottom: 2px;
+            
+            /* 吊り下げているワイヤー */
+            .wire {
+                width: 4px;
+                height: 20px; /* ここが伸びて降下する */
+                background: #999;
+                transition: height 1s cubic-bezier(0.25, 0.1, 0.25, 1);
             }
-            .fraction-line {
+            
+            /* アームの土台 */
+            .claw-base {
+                width: 40px;
+                height: 20px;
+                background: var(--arcade-blue);
+                border-radius: 5px;
+                border: 2px solid #5a8ecc;
+                position: relative;
+                z-index: 2;
+            }
+            
+            /* アームの爪（左右） */
+            .prongs {
+                display: flex;
+                justify-content: space-between;
+                width: 70px;
+                margin-top: -5px;
+            }
+            
+            .prong {
+                width: 15px;
+                height: 40px;
+                border: 4px solid var(--claw-color);
+                border-top: none;
+                transition: transform 0.3s ease;
+            }
+            
+            .prong.left {
+                border-right: none;
+                border-radius: 0 0 0 15px;
+                transform-origin: top right;
+                transform: rotate(20deg);
+            }
+            
+            .prong.right {
+                border-left: none;
+                border-radius: 0 0 15px 0;
+                transform-origin: top left;
+                transform: rotate(-20deg);
+            }
+            
+            /* アームが閉じた状態 */
+            .crane-system.closed .prong.left { transform: rotate(0deg); }
+            .crane-system.closed .prong.right { transform: rotate(0deg); }
+            
+            /* 獲得した景品がアームに挟まる部分 */
+            .caught-prize {
+                position: absolute;
+                top: 35px;
+                font-size: 2.5em;
+                opacity: 0;
+                transition: opacity 0.2s;
+                pointer-events: none;
+            }
+            
+            .crane-system.has-prize .caught-prize {
+                opacity: 1;
+            }
+            
+            /* 下部の景品エリア */
+            .prize-area {
+                position: absolute;
+                bottom: -10px;
                 width: 100%;
-                height: 3px;
-                background-color: var(--dark-gray);
-                border-radius: 2px;
-            }
-            .denominator {
-                font-size: 0.8em;
-                padding-top: 2px;
+                height: 100px;
+                z-index: 5;
             }
             
-            .input-section {
-                margin-bottom: 30px;
+            .scattered-prize {
+                position: absolute;
+                font-size: 3em;
+                filter: drop-shadow(0 5px 5px rgba(0,0,0,0.2));
             }
             
-            .answer-input {
-                width: 100%;
-                max-width: 240px;
-                padding: 15px;
-                font-size: 1.6em;
-                text-align: center;
-                border: 3px solid var(--pastel-blue);
-                border-radius: 12px;
-                outline: none;
-                transition: all 0.3s ease;
+            /* コントロール部分 */
+            .controls {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                align-items: center;
             }
             
-            .answer-input:focus {
-                border-color: #4a90e2;
-                box-shadow: 0 0 10px rgba(74, 144, 226, 0.2);
+            .btn-go {
+                background: linear-gradient(135deg, #ff4757, #ff6b81);
+                color: white;
+                font-size: 1.8em;
+                font-weight: bold;
+                padding: 15px 60px;
+                border: none;
+                border-radius: 50px;
+                cursor: pointer;
+                box-shadow: 0 6px 0 #cf3a46, 0 10px 20px rgba(255, 71, 87, 0.4);
+                transition: all 0.1s ease;
             }
             
-            /* ボタンのスタイル */
-            button {
-                padding: 14px 35px;
+            .btn-go:hover:not(:disabled) {
+                transform: translateY(2px);
+                box-shadow: 0 4px 0 #cf3a46, 0 8px 15px rgba(255, 71, 87, 0.4);
+            }
+            
+            .btn-go:active:not(:disabled) {
+                transform: translateY(6px);
+                box-shadow: 0 0 0 #cf3a46, 0 4px 5px rgba(255, 71, 87, 0.4);
+            }
+            
+            .btn-go:disabled {
+                background: #ccc;
+                box-shadow: 0 6px 0 #999;
+                cursor: not-allowed;
+                transform: none;
+            }
+            
+            .instructions {
+                display: flex;
+                gap: 10px;
+                justify-content: center;
+                align-items: center;
+                background: #f5f5f5;
+                padding: 10px 20px;
+                border-radius: 10px;
+                font-weight: bold;
+                color: #555;
+            }
+            
+            .key-icon {
+                background: white;
+                border: 2px solid #ddd;
+                border-radius: 5px;
+                padding: 2px 8px;
+                box-shadow: 0 2px 0 #ddd;
+            }
+
+            /* 結果表示モーダル */
+            #resultMessage {
+                min-height: 30px;
                 font-size: 1.2em;
                 font-weight: bold;
-                border: none;
-                border-radius: 12px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                width: 100%;
-                max-width: 240px;
-            }
-            
-            .btn-submit {
-                background: linear-gradient(135deg, #FFB3D9, #ff94c2);
-                color: white;
-                box-shadow: 0 4px 15px rgba(255, 179, 217, 0.4);
-            }
-            
-            .btn-submit:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(255, 179, 217, 0.6);
-            }
-            
-            .btn-next {
-                background: linear-gradient(135deg, var(--pastel-green), #8affc1);
-                color: var(--dark-gray);
-                box-shadow: 0 4px 15px rgba(179, 255, 217, 0.4);
-                display: none;
-            }
-            
-            .btn-next:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(179, 255, 217, 0.6);
-            }
-            
-            button:active {
-                transform: translateY(0);
-            }
-            
-            /* 結果アニメーション */
-            .result-section {
-                min-height: 80px;
-                margin-top: 20px;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-            }
-            
-            .result-message {
-                font-size: 2em;
-                font-weight: bold;
-                animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            }
-            
-            .result-correct {
-                color: var(--success-color);
-            }
-            
-            .result-incorrect {
-                color: var(--error-color);
-            }
-            
-            @keyframes popIn {
-                0% { opacity: 0; transform: scale(0.7); }
-                100% { opacity: 1; transform: scale(1); }
-            }
-            
-            @media (max-width: 500px) {
-                .container { padding: 25px; }
-                .formula-section { font-size: 1.8em; min-height: 100px; }
-                h1 { font-size: 1.6em; }
+                color: var(--arcade-pink);
+                margin-top: 15px;
             }
         `;
         document.head.appendChild(style);
@@ -220,206 +277,183 @@ class MathDrillApp {
         
         const html = `
             <div class="container">
-                <h1>🧮 算数計算ドリル</h1>
-                <div class="subtitle">小学6年生レベル（分数・小数の混合計算）</div>
+                <h1>🛸 クレーンゲーム</h1>
+                <div class="subtitle">前後左右（矢印キー）で狙いを定めてGO！</div>
                 
-                <div class="score-board">
-                    <div>正解数: <span id="scoreText">0</span></div>
-                    <div>解いた数: <span id="totalText">0</span></div>
-                </div>
-                
-                <div class="formula-section" id="formulaContainer">
+                <div class="game-screen">
+                    <div class="crane-system" id="craneSystem">
+                        <div class="wire" id="craneWire"></div>
+                        <div class="claw-base"></div>
+                        <div class="prongs">
+                            <div class="prong left"></div>
+                            <div class="prong right"></div>
+                        </div>
+                        <div class="caught-prize" id="caughtPrize">🧸</div>
                     </div>
-                
-                <div class="input-section">
-                    <input 
-                        type="number" 
-                        step="any" 
-                        id="answerInput" 
-                        class="answer-input" 
-                        placeholder="答えを入力"
-                        autocomplete="off"
-                    >
+                    
+                    <div class="prize-area" id="prizeArea">
+                        </div>
                 </div>
                 
-                <div style="display: flex; justify-content: center;">
-                    <button id="submitBtn" class="btn-submit">採点</button>
-                    <button id="nextBtn" class="btn-next">次の問題へ</button>
+                <div class="controls">
+                    <div class="instructions">
+                        操作: <span class="key-icon">↑</span><span class="key-icon">↓</span><span class="key-icon">←</span><span class="key-icon">→</span>
+                    </div>
+                    <button id="btnGo" class="btn-go">GO</button>
+                    <div id="resultMessage"></div>
                 </div>
-                
-                <div class="result-section" id="resultContainer"></div>
             </div>
         `;
         
         this.appContainer.innerHTML = html;
         
-        this.formulaContainer = document.getElementById('formulaContainer');
-        this.answerInput = document.getElementById('answerInput');
-        this.submitBtn = document.getElementById('submitBtn');
-        this.nextBtn = document.getElementById('nextBtn');
-        this.resultContainer = document.getElementById('resultContainer');
-        this.scoreText = document.getElementById('scoreText');
-        this.totalText = document.getElementById('totalText');
+        // DOM要素の取得
+        this.craneSystem = document.getElementById('craneSystem');
+        this.craneWire = document.getElementById('craneWire');
+        this.btnGo = document.getElementById('btnGo');
+        this.resultMessage = document.getElementById('resultMessage');
+        this.prizeArea = document.getElementById('prizeArea');
+        this.caughtPrize = document.getElementById('caughtPrize');
     }
     
+    // 景品をランダムに配置する
+    scatterPrizes() {
+        this.prizeArea.innerHTML = '';
+        for (let i = 0; i < 15; i++) {
+            const prize = document.createElement('div');
+            prize.className = 'scattered-prize';
+            prize.textContent = this.prizes[Math.floor(Math.random() * this.prizes.length)];
+            
+            // ランダムな位置と角度
+            const left = Math.random() * 80 + 5; // 5% ~ 85%
+            const bottom = Math.random() * 40; // 0px ~ 40px
+            const rotate = Math.random() * 60 - 30; // -30deg ~ 30deg
+            
+            prize.style.left = \`\${left}%\`;
+            prize.style.bottom = \`\${bottom}px\`;
+            prize.style.transform = \`rotate(\${rotate}deg)\`;
+            
+            this.prizeArea.appendChild(prize);
+        }
+    }
+    
+    // イベントリスナーの登録
     attachEventListeners() {
-        this.submitBtn.addEventListener('click', () => this.checkAnswer());
-        
-        // Enterキーでも採点・次へ進むができるように設定
-        this.answerInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                if (this.submitBtn.style.display !== 'none') {
-                    this.checkAnswer();
-                } else {
-                    this.nextQuestion();
+        // キーが押された時
+        document.addEventListener('keydown', (e) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault(); // 画面がスクロールしないようにする
+                if (!this.isMoving) {
+                    this.keys[e.key] = true;
                 }
             }
         });
         
-        this.nextBtn.addEventListener('click', () => this.nextQuestion());
+        // キーが離された時
+        document.addEventListener('keyup', (e) => {
+            if (this.keys.hasOwnProperty(e.key)) {
+                this.keys[e.key] = false;
+            }
+        });
+        
+        // GOボタン
+        this.btnGo.addEventListener('click', () => this.dropCrane());
     }
     
-    // 小学6年生レベルの問題をランダムに自動生成するロジック
-    generateQuestion() {
-        const types = ['decimal-mul', 'decimal-div', 'mixed-fraction', 'mixed-nested'];
-        const type = types[Math.floor(Math.random() * types.length)];
-        
-        let html = '';
-        let answer = 0;
-        
-        switch(type) {
-            case 'decimal-mul': {
-                // 小数の掛け算 (例: 2.4 × 1.5)
-                const a = (Math.floor(Math.random() * 80) + 11) / 10; // 1.1 ~ 9.0
-                const b = [0.2, 0.4, 0.5, 0.6, 0.8, 1.2, 1.5, 2.5][Math.floor(Math.random() * 8)];
-                answer = a * b;
-                html = `<span>${a} × ${b} ＝</span>`;
-                break;
+    // ゲームループ（滑らかな移動処理）
+    startGameLoop() {
+        setInterval(() => {
+            if (this.isMoving) return; // 降下中は動かせない
+            
+            const speed = 1.5;
+            let moved = false;
+            
+            // X軸（左右）の移動
+            if (this.keys.ArrowLeft) { this.craneX -= speed; moved = true; }
+            if (this.keys.ArrowRight) { this.craneX += speed; moved = true; }
+            // Z軸（前後＝画面上では上下）の移動
+            if (this.keys.ArrowUp) { this.craneZ -= speed; moved = true; }
+            if (this.keys.ArrowDown) { this.craneZ += speed; moved = true; }
+            
+            // 画面外に出ないように制限
+            this.craneX = Math.max(5, Math.min(95, this.craneX));
+            this.craneZ = Math.max(5, Math.min(45, this.craneZ));
+            
+            if (moved) {
+                this.updateCraneVisual();
+                this.resultMessage.textContent = ''; // 動かしたらメッセージを消す
             }
-            case 'decimal-div': {
-                // 小数の割り算 (割り切れるものを逆算して生成)
-                const b = [0.3, 0.4, 0.5, 0.6, 0.8, 1.2, 1.5][Math.floor(Math.random() * 7)];
-                const ans = (Math.floor(Math.random() * 25) + 5) / 10; // 0.5 ~ 2.9
-                const a = Math.round(b * ans * 100) / 100;
-                answer = ans;
-                html = `<span>${a} ÷ ${b} ＝</span>`;
-                break;
+        }, 20); // 約50FPSで更新
+    }
+    
+    // クレーンの見た目を更新
+    updateCraneVisual() {
+        this.craneSystem.style.left = \`\${this.craneX}%\`;
+        this.craneSystem.style.top = \`\${this.craneZ}%\`;
+    }
+    
+    // クレーンを降下させる処理
+    dropCrane() {
+        if (this.isMoving) return;
+        
+        this.isMoving = true;
+        this.btnGo.disabled = true;
+        this.resultMessage.textContent = 'アーム降下中...';
+        
+        // 1. ワイヤーを伸ばして下へ
+        const dropHeight = 250 - (this.craneZ * 2.5); // 奥行きによって降下距離を調整
+        this.craneWire.style.height = \`\${dropHeight}px\`;
+        
+        // 2. 下まで到達したらアームを閉じる
+        setTimeout(() => {
+            this.craneSystem.classList.add('closed');
+            
+            // 3. 確率計算（2分の1の確率でゲット）
+            const isSuccess = Math.random() < 0.5;
+            
+            if (isSuccess) {
+                // ランダムな景品をアームの中に表示
+                const randomPrize = this.prizes[Math.floor(Math.random() * this.prizes.length)];
+                this.caughtPrize.textContent = randomPrize;
+                this.craneSystem.classList.add('has-prize');
             }
-            case 'mixed-fraction': {
-                // 分数と小数の混ざった計算 (答えが整数か小数にきれいに収まるもの)
-                const fractions = [
-                    {n: 1, d: 2, v: 0.5},
-                    {n: 1, d: 4, v: 0.25},
-                    {n: 3, d: 4, v: 0.75},
-                    {n: 1, d: 5, v: 0.2},
-                    {n: 2, d: 5, v: 0.4},
-                    {n: 3, d: 5, v: 0.6},
-                    {n: 4, d: 5, v: 0.8}
-                ];
-                const f = fractions[Math.floor(Math.random() * fractions.length)];
-                const b = (Math.floor(Math.random() * 12) + 1) / 10; // 0.1 ~ 1.2
-                const op = ['＋', '－', '×'][Math.floor(Math.random() * 3)];
+            
+            // 4. 少し待ってからアームを上に戻す
+            setTimeout(() => {
+                this.craneWire.style.height = '20px'; // ワイヤーを元の長さに
                 
-                if (op === '＋') {
-                    answer = f.v + b;
-                    html = `${this.renderFraction(f.n, f.d)} <span> ＋ ${b} ＝</span>`;
-                } else if (op === '－') {
-                    if (b > f.v) {
-                        answer = b - f.v;
-                        html = `<span>${b} － </span> ${this.renderFraction(f.n, f.d)} <span> ＝</span>`;
+                // 5. 上まで戻りきったら結果表示
+                setTimeout(() => {
+                    if (isSuccess) {
+                        this.resultMessage.style.color = '#2ecc71';
+                        this.resultMessage.textContent = '🎉 おめでとう！景品ゲット！ 🎉';
                     } else {
-                        answer = f.v - b;
-                        html = `${this.renderFraction(f.n, f.d)} <span> － ${b} ＝</span>`;
+                        this.resultMessage.style.color = '#e74c3c';
+                        this.resultMessage.textContent = '💦 残念！アームがすっぽ抜けました...';
                     }
-                } else {
-                    answer = f.v * b;
-                    html = `${this.renderFraction(f.n, f.d)} <span> × ${b} ＝</span>`;
-                }
-                break;
-            }
-            case 'mixed-nested': {
-                // カッコのある複雑な四則混合計算
-                const op = Math.random() > 0.5 ? '＋' : '－';
-                if (op === '＋') {
-                    const a = (Math.floor(Math.random() * 30) + 10) / 10;
-                    const b = (Math.floor(Math.random() * 30) + 10) / 10;
-                    const c = [0.2, 0.5, 2, 3][Math.floor(Math.random() * 4)];
-                    answer = (a + b) * c;
-                    html = `<span>（ ${a} ＋ ${b} ） × ${c} ＝</span>`;
-                } else {
-                    const b = (Math.floor(Math.random() * 20) + 10) / 10;
-                    const ans = (Math.floor(Math.random() * 5) + 1);
-                    const c = [0.4, 0.5, 0.6, 0.8, 1.2][Math.floor(Math.random() * 5)];
-                    const diff = Math.round(ans * c * 10) / 10;
-                    const a = Math.round((diff + b) * 10) / 10;
-                    answer = ans;
-                    html = `<span>（ ${a} － ${b} ） ÷ ${c} ＝</span>`;
-                }
-                break;
-            }
-        }
-        
-        // JavaScriptの浮動小数点数による計算誤差を修正 (小数点第3位まで丸める)
-        answer = Math.round(answer * 1000) / 1000;
-        return { html, answer };
+                    
+                    // アームを開いて初期状態に戻す
+                    this.resetCrane();
+                    
+                }, 1000); // 戻るアニメーションの時間
+                
+            }, 600); // 下で掴んでいる時間
+            
+        }, 1000); // 降りるアニメーションの時間
     }
     
-    // 分数用HTMLの生成
-    renderFraction(n, d) {
-        return `
-            <div class="fraction-container">
-                <span class="numerator">${n}</span>
-                <span class="fraction-line"></span>
-                <span class="denominator">${d}</span>
-            </div>
-        `;
-    }
-    
-    // 次の問題をセット
-    nextQuestion() {
-        this.currentQuestion = this.generateQuestion();
-        this.formulaContainer.innerHTML = this.currentQuestion.html;
-        this.answerInput.value = '';
-        this.answerInput.disabled = false;
-        this.resultContainer.innerHTML = '';
-        
-        this.submitBtn.style.display = 'block';
-        this.nextBtn.style.display = 'none';
-        this.answerInput.focus();
-    }
-    
-    // 採点処理
-    checkAnswer() {
-        const userInput = this.answerInput.value.trim();
-        if (userInput === '') {
-            alert('答えを入力してください！');
-            return;
-        }
-        
-        const userNum = Math.round(parseFloat(userInput) * 1000) / 1000;
-        const isCorrect = userNum === this.currentQuestion.answer;
-        
-        this.total++;
-        this.totalText.textContent = this.total;
-        
-        this.answerInput.disabled = true;
-        this.submitBtn.style.display = 'none';
-        this.nextBtn.style.display = 'block';
-        
-        if (isCorrect) {
-            this.score++;
-            this.scoreText.textContent = this.score;
-            this.resultContainer.innerHTML = `<div class="result-message result-correct">🎉 おめでとう！🎉</div>`;
-        } else {
-            this.resultContainer.innerHTML = `
-                <div class="result-message result-incorrect">❌ 不正解！</div>
-                <div style="margin-top: 8px; color: #666; font-size: 0.9em;">正解は <strong>${this.currentQuestion.answer}</strong> でした</div>
-            `;
-        }
+    // クレーンを初期状態に戻す
+    resetCrane() {
+        setTimeout(() => {
+            this.craneSystem.classList.remove('closed');
+            this.craneSystem.classList.remove('has-prize');
+            this.isMoving = false;
+            this.btnGo.disabled = false;
+        }, 1500); // 結果を少し見せてからリセット
     }
 }
 
 // DOMが読み込まれたらアプリを起動
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new MathDrillApp();
+    window.app = new CraneGameApp();
 });
