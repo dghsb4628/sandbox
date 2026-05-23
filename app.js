@@ -1,40 +1,38 @@
-// クレーンゲームアプリ
-class CraneGameApp {
+// Pastel Colors for roulette segments
+const PASTEL_COLORS = [
+    '#FFB3D9', // Pink
+    '#B3D9FF', // Blue
+    '#B3FFD9', // Green
+    '#FFFFB3', // Yellow
+    '#D9B3FF', // Purple
+    '#FFD9B3', // Peach
+    '#C9FFB3', // Light Green
+    '#FFB3E5', // Magenta
+];
+
+class RouletteApp {
     constructor() {
+        this.options = [];
+        this.isSpinning = false;
+        this.currentRotation = 0;
         this.appContainer = document.getElementById('app');
-        
-        // クレーンの位置と状態
-        this.craneX = 50; // 左からのパーセンテージ (0-100)
-        this.craneZ = 10; // 上からのパーセンテージ（奥行き表現） (0-40)
-        this.isMoving = false; // アーム降下中かどうか
-        
-        // キーボードの入力状態
-        this.keys = {
-            ArrowUp: false,
-            ArrowDown: false,
-            ArrowLeft: false,
-            ArrowRight: false
-        };
-        
-        // 景品リスト
-        this.prizes = ['🧸', '🎁', '🐼', '🐰', '💎', '👑'];
         
         this.render();
         this.attachEventListeners();
-        this.startGameLoop();
-        this.scatterPrizes();
     }
     
-    // アプリ全体のデザイン（CSS）を注入
     createStyles() {
         const style = document.createElement('style');
         style.textContent = `
             :root {
-                --arcade-pink: #ff7eb3;
-                --arcade-blue: #7eb3ff;
-                --machine-bg: #ffe6f2;
-                --dark-gray: #333;
-                --claw-color: #c0c0c0;
+                --pastel-pink: #FFB3D9;
+                --pastel-blue: #B3D9FF;
+                --pastel-green: #B3FFD9;
+                --pastel-yellow: #FFFFB3;
+                --pastel-purple: #D9B3FF;
+                --pastel-peach: #FFD9B3;
+                --light-gray: #F5F5F5;
+                --dark-gray: #333333;
             }
             
             * {
@@ -45,415 +43,531 @@ class CraneGameApp {
             
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                background: linear-gradient(135deg, #FFB3D9 0%, #B3D9FF 50%, #B3FFD9 100%);
                 min-height: 100vh;
                 padding: 20px;
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                color: var(--dark-gray);
             }
             
             .container {
                 background: white;
                 border-radius: 20px;
-                padding: 30px;
+                padding: 40px;
+                max-width: 600px;
                 width: 100%;
-                max-width: 450px;
-                box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
-                text-align: center;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
             }
             
             h1 {
-                color: var(--arcade-pink);
-                margin-bottom: 5px;
-                font-size: 2em;
-                text-shadow: 2px 2px 0px rgba(255, 126, 179, 0.2);
-            }
-            
-            .subtitle {
-                color: #666;
-                font-size: 0.9em;
-                margin-bottom: 20px;
-            }
-            
-            /* クレーンゲームの筐体画面 */
-            .game-screen {
-                position: relative;
-                width: 100%;
-                height: 400px;
-                background: var(--machine-bg);
-                border: 8px solid var(--arcade-pink);
-                border-radius: 15px;
-                border-bottom-width: 30px;
-                overflow: hidden;
-                margin-bottom: 20px;
-                box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
-            }
-            
-            /* 背景のストライプ模様 */
-            .game-screen::before {
-                content: '';
-                position: absolute;
-                top: 0; left: 0; right: 0; bottom: 0;
-                background: repeating-linear-gradient(
-                    45deg,
-                    transparent,
-                    transparent 20px,
-                    rgba(255, 255, 255, 0.5) 20px,
-                    rgba(255, 255, 255, 0.5) 40px
-                );
-                z-index: 1;
-            }
-            
-            /* アーム全体のコンテナ */
-            .crane-system {
-                position: absolute;
-                top: 10%; /* Z軸（奥行き）で変化 */
-                left: 50%; /* X軸（左右）で変化 */
-                transform: translateX(-50%);
-                z-index: 10;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                transition: top 0.1s, left 0.1s; /* キー操作用の滑らかな補間 */
-            }
-            
-            /* 吊り下げているワイヤー */
-            .wire {
-                width: 4px;
-                height: 20px; /* ここが伸びて降下する */
-                background: #999;
-                transition: height 1s cubic-bezier(0.25, 0.1, 0.25, 1);
-            }
-            
-            /* アームの土台 */
-            .claw-base {
-                width: 40px;
-                height: 20px;
-                background: var(--arcade-blue);
-                border-radius: 5px;
-                border: 2px solid #5a8ecc;
-                position: relative;
-                z-index: 2;
-            }
-            
-            /* アームの爪（左右） */
-            .prongs {
-                display: flex;
-                justify-content: space-between;
-                width: 70px;
-                margin-top: -5px;
-            }
-            
-            .prong {
-                width: 15px;
-                height: 40px;
-                border: 4px solid var(--claw-color);
-                border-top: none;
-                transition: transform 0.3s ease;
-            }
-            
-            .prong.left {
-                border-right: none;
-                border-radius: 0 0 0 15px;
-                transform-origin: top right;
-                transform: rotate(20deg);
-            }
-            
-            .prong.right {
-                border-left: none;
-                border-radius: 0 0 15px 0;
-                transform-origin: top left;
-                transform: rotate(-20deg);
-            }
-            
-            /* アームが閉じた状態 */
-            .crane-system.closed .prong.left { transform: rotate(0deg); }
-            .crane-system.closed .prong.right { transform: rotate(0deg); }
-            
-            /* 獲得した景品がアームに挟まる部分 */
-            .caught-prize {
-                position: absolute;
-                top: 35px;
+                text-align: center;
+                color: var(--dark-gray);
+                margin-bottom: 30px;
                 font-size: 2.5em;
-                opacity: 0;
-                transition: opacity 0.2s;
-                pointer-events: none;
             }
             
-            .crane-system.has-prize .caught-prize {
-                opacity: 1;
+            .input-section {
+                margin-bottom: 30px;
             }
             
-            /* 下部の景品エリア */
-            .prize-area {
-                position: absolute;
-                bottom: -10px;
-                width: 100%;
-                height: 100px;
-                z-index: 5;
-            }
-            
-            .scattered-prize {
-                position: absolute;
-                font-size: 3em;
-                filter: drop-shadow(0 5px 5px rgba(0,0,0,0.2));
-            }
-            
-            /* コントロール部分 */
-            .controls {
-                display: flex;
-                flex-direction: column;
-                gap: 15px;
-                align-items: center;
-            }
-            
-            .btn-go {
-                background: linear-gradient(135deg, #ff4757, #ff6b81);
-                color: white;
-                font-size: 1.8em;
-                font-weight: bold;
-                padding: 15px 60px;
-                border: none;
-                border-radius: 50px;
-                cursor: pointer;
-                box-shadow: 0 6px 0 #cf3a46, 0 10px 20px rgba(255, 71, 87, 0.4);
-                transition: all 0.1s ease;
-            }
-            
-            .btn-go:hover:not(:disabled) {
-                transform: translateY(2px);
-                box-shadow: 0 4px 0 #cf3a46, 0 8px 15px rgba(255, 71, 87, 0.4);
-            }
-            
-            .btn-go:active:not(:disabled) {
-                transform: translateY(6px);
-                box-shadow: 0 0 0 #cf3a46, 0 4px 5px rgba(255, 71, 87, 0.4);
-            }
-            
-            .btn-go:disabled {
-                background: #ccc;
-                box-shadow: 0 6px 0 #999;
-                cursor: not-allowed;
-                transform: none;
-            }
-            
-            .instructions {
+            .input-group {
                 display: flex;
                 gap: 10px;
-                justify-content: center;
-                align-items: center;
-                background: #f5f5f5;
-                padding: 10px 20px;
-                border-radius: 10px;
-                font-weight: bold;
-                color: #555;
+                margin-bottom: 15px;
             }
             
-            .key-icon {
-                background: white;
-                border: 2px solid #ddd;
-                border-radius: 5px;
-                padding: 2px 8px;
-                box-shadow: 0 2px 0 #ddd;
+            input[type="text"] {
+                flex: 1;
+                padding: 12px 16px;
+                border: 2px solid var(--pastel-pink);
+                border-radius: 10px;
+                font-size: 1em;
+                transition: all 0.3s ease;
             }
-
-            /* 結果表示モーダル */
-            #resultMessage {
-                min-height: 30px;
-                font-size: 1.2em;
+            
+            input[type="text"]:focus {
+                outline: none;
+                border-color: #FF69B4;
+                box-shadow: 0 0 10px rgba(255, 105, 180, 0.2);
+            }
+            
+            button {
+                transition: all 0.3s ease;
+                border: none;
+                border-radius: 10px;
                 font-weight: bold;
-                color: var(--arcade-pink);
-                margin-top: 15px;
+                cursor: pointer;
+            }
+            
+            .btn-add {
+                padding: 12px 24px;
+                background: linear-gradient(135deg, var(--pastel-pink), #FFB3D9);
+                color: white;
+                font-size: 1em;
+            }
+            
+            .btn-add:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(255, 105, 180, 0.3);
+            }
+            
+            .btn-add:active {
+                transform: translateY(0);
+            }
+            
+            .btn-clear {
+                width: 100%;
+                padding: 10px;
+                background: #E8E8E8;
+                color: var(--dark-gray);
+                font-size: 0.9em;
+            }
+            
+            .btn-clear:hover {
+                background: #D0D0D0;
+            }
+            
+            .options-list {
+                margin-bottom: 30px;
+            }
+            
+            .options-list h3 {
+                color: var(--dark-gray);
+                margin-bottom: 15px;
+                font-size: 1.1em;
+            }
+            
+            .options-list ul {
+                list-style: none;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .option-tag {
+                background: linear-gradient(135deg, var(--pastel-blue), #B3D9FF);
+                color: var(--dark-gray);
+                padding: 8px 16px;
+                border-radius: 20px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 500;
+                animation: slideIn 0.3s ease;
+            }
+            
+            .option-tag button {
+                background: rgba(255, 255, 255, 0.6);
+                width: 24px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                color: var(--dark-gray);
+                padding: 0;
+            }
+            
+            .option-tag button:hover {
+                background: rgba(255, 255, 255, 0.9);
+            }
+            
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .roulette-section {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                margin-bottom: 30px;
+            }
+            
+            .roulette-container {
+                position: relative;
+                width: 300px;
+                height: 300px;
+                margin-bottom: 30px;
+            }
+            
+            canvas {
+                width: 300px;
+                height: 300px;
+                display: block;
+                border-radius: 50%;
+                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            }
+            
+            .needle {
+                position: absolute;
+                top: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 0;
+                height: 0;
+                border-left: 12px solid transparent;
+                border-right: 12px solid transparent;
+                border-top: 30px solid #FF6B9D;
+                z-index: 10;
+                filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+            }
+            
+            .result-display {
+                text-align: center;
+                min-height: 80px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .result-display h2 {
+                font-size: 1.5em;
+                color: var(--dark-gray);
+                animation: popIn 0.5s ease;
+            }
+            
+            @keyframes popIn {
+                0% {
+                    opacity: 0;
+                    transform: scale(0.5);
+                }
+                100% {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+            
+            .btn-start {
+                width: 100%;
+                padding: 16px;
+                background: linear-gradient(135deg, var(--pastel-green), #B3FFD9);
+                color: var(--dark-gray);
+                font-size: 1.2em;
+            }
+            
+            .btn-start:hover:not(:disabled) {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(179, 255, 217, 0.4);
+            }
+            
+            .btn-start:active:not(:disabled) {
+                transform: translateY(0);
+            }
+            
+            .btn-start:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+            
+            @media (max-width: 600px) {
+                .container {
+                    padding: 20px;
+                }
+                
+                h1 {
+                    font-size: 2em;
+                }
+                
+                .roulette-container {
+                    width: 250px;
+                    height: 250px;
+                }
+                
+                canvas {
+                    width: 250px;
+                    height: 250px;
+                }
             }
         `;
         document.head.appendChild(style);
     }
     
-    // HTML構造のレンダリング
     render() {
         this.createStyles();
         
         const html = `
             <div class="container">
-                <h1>🛸 クレーンゲーム</h1>
-                <div class="subtitle">前後左右（矢印キー）で狙いを定めてGO！</div>
+                <h1>🎡 ルーレットアプリ</h1>
                 
-                <div class="game-screen">
-                    <div class="crane-system" id="craneSystem">
-                        <div class="wire" id="craneWire"></div>
-                        <div class="claw-base"></div>
-                        <div class="prongs">
-                            <div class="prong left"></div>
-                            <div class="prong right"></div>
-                        </div>
-                        <div class="caught-prize" id="caughtPrize">🧸</div>
+                <div class="input-section">
+                    <div class="input-group">
+                        <input 
+                            type="text" 
+                            id="optionInput" 
+                            placeholder="候補を入力してください"
+                            autocomplete="off"
+                        >
+                        <button id="addBtn" class="btn-add">追加</button>
                     </div>
-                    
-                    <div class="prize-area" id="prizeArea">
-                        </div>
+                    <button id="clearBtn" class="btn-clear">リセット</button>
                 </div>
                 
-                <div class="controls">
-                    <div class="instructions">
-                        操作: <span class="key-icon">↑</span><span class="key-icon">↓</span><span class="key-icon">←</span><span class="key-icon">→</span>
-                    </div>
-                    <button id="btnGo" class="btn-go">GO</button>
-                    <div id="resultMessage"></div>
+                <div class="options-list">
+                    <h3>候補一覧</h3>
+                    <ul id="optionsList"></ul>
                 </div>
+                
+                <div class="roulette-section">
+                    <div class="roulette-container">
+                        <canvas id="rouletteCanvas" width="400" height="400"></canvas>
+                        <div class="needle"></div>
+                    </div>
+                    <div class="result-display" id="resultDisplay"></div>
+                </div>
+                
+                <button id="startBtn" class="btn-start" disabled>スタート</button>
             </div>
         `;
         
         this.appContainer.innerHTML = html;
         
-        // DOM要素の取得
-        this.craneSystem = document.getElementById('craneSystem');
-        this.craneWire = document.getElementById('craneWire');
-        this.btnGo = document.getElementById('btnGo');
-        this.resultMessage = document.getElementById('resultMessage');
-        this.prizeArea = document.getElementById('prizeArea');
-        this.caughtPrize = document.getElementById('caughtPrize');
+        this.optionInput = document.getElementById('optionInput');
+        this.addBtn = document.getElementById('addBtn');
+        this.clearBtn = document.getElementById('clearBtn');
+        this.optionsList = document.getElementById('optionsList');
+        this.startBtn = document.getElementById('startBtn');
+        this.canvas = document.getElementById('rouletteCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.resultDisplay = document.getElementById('resultDisplay');
     }
     
-    // 景品をランダムに配置する
-    scatterPrizes() {
-        this.prizeArea.innerHTML = '';
-        for (let i = 0; i < 15; i++) {
-            const prize = document.createElement('div');
-            prize.className = 'scattered-prize';
-            prize.textContent = this.prizes[Math.floor(Math.random() * this.prizes.length)];
-            
-            // ランダムな位置と角度
-            const left = Math.random() * 80 + 5; // 5% ~ 85%
-            const bottom = Math.random() * 40; // 0px ~ 40px
-            const rotate = Math.random() * 60 - 30; // -30deg ~ 30deg
-            
-            prize.style.left = \`\${left}%\`;
-            prize.style.bottom = \`\${bottom}px\`;
-            prize.style.transform = \`rotate(\${rotate}deg)\`;
-            
-            this.prizeArea.appendChild(prize);
-        }
-    }
-    
-    // イベントリスナーの登録
     attachEventListeners() {
-        // キーが押された時
-        document.addEventListener('keydown', (e) => {
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-                e.preventDefault(); // 画面がスクロールしないようにする
-                if (!this.isMoving) {
-                    this.keys[e.key] = true;
-                }
-            }
+        this.addBtn.addEventListener('click', () => this.addOption());
+        this.optionInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addOption();
+        });
+        this.clearBtn.addEventListener('click', () => this.resetApp());
+        this.startBtn.addEventListener('click', () => this.spin());
+    }
+    
+    addOption() {
+        const value = this.optionInput.value.trim();
+        if (value === '') {
+            alert('候補を入力してください');
+            return;
+        }
+        
+        if (this.options.includes(value)) {
+            alert('同じ候補は追加できません');
+            return;
+        }
+        
+        if (this.options.length >= 8) {
+            alert('候補は最大8個までです');
+            return;
+        }
+        
+        this.options.push(value);
+        this.optionInput.value = '';
+        this.updateUI();
+    }
+    
+    removeOption(index) {
+        this.options.splice(index, 1);
+        this.updateUI();
+    }
+    
+    updateUI() {
+        // Update options list
+        this.optionsList.innerHTML = '';
+        this.options.forEach((option, index) => {
+            const li = document.createElement('li');
+            li.className = 'option-tag';
+            li.innerHTML = `
+                ${option}
+                <button onclick="window.app.removeOption(${index})">×</button>
+            `;
+            this.optionsList.appendChild(li);
         });
         
-        // キーが離された時
-        document.addEventListener('keyup', (e) => {
-            if (this.keys.hasOwnProperty(e.key)) {
-                this.keys[e.key] = false;
-            }
+        // Enable/disable start button
+        this.startBtn.disabled = this.options.length < 2;
+        
+        // Redraw roulette
+        this.drawRoulette();
+        this.resultDisplay.innerHTML = '';
+    }
+    
+    drawRoulette() {
+        if (this.options.length === 0) {
+            this.ctx.fillStyle = '#E8E8E8';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.fillStyle = '#999';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.font = '16px sans-serif';
+            this.ctx.fillText('候補を2個以上追加してください', 200, 200);
+            return;
+        }
+        
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        const radius = 190;
+        const sliceAngle = (2 * Math.PI) / this.options.length;
+        
+        // Clear canvas
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Draw circle background
+        this.ctx.fillStyle = '#FFF';
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        this.ctx.fill();
+        this.ctx.strokeStyle = '#DDD';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+        
+        // Draw segments
+        this.options.forEach((option, index) => {
+            const startAngle = index * sliceAngle + this.currentRotation;
+            const endAngle = startAngle + sliceAngle;
+            
+            // Draw segment
+            this.ctx.beginPath();
+            this.ctx.moveTo(centerX, centerY);
+            this.ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+            this.ctx.closePath();
+            this.ctx.fillStyle = PASTEL_COLORS[index % PASTEL_COLORS.length];
+            this.ctx.fill();
+            this.ctx.strokeStyle = '#FFF';
+            this.ctx.lineWidth = 3;
+            this.ctx.stroke();
+            
+            // Draw text
+            const textAngle = startAngle + sliceAngle / 2;
+            const textX = centerX + Math.cos(textAngle) * (radius * 0.65);
+            const textY = centerY + Math.sin(textAngle) * (radius * 0.65);
+            
+            this.ctx.save();
+            this.ctx.translate(textX, textY);
+            this.ctx.rotate(textAngle + Math.PI / 2);
+            this.ctx.fillStyle = '#333';
+            this.ctx.font = 'bold 14px sans-serif';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            
+            // Wrap text if needed
+            const maxWidth = radius * 0.4;
+            this.wrapText(this.ctx, option, 0, 0, maxWidth, 18);
+            
+            this.ctx.restore();
         });
         
-        // GOボタン
-        this.btnGo.addEventListener('click', () => this.dropCrane());
+        // Draw center circle
+        this.ctx.fillStyle = '#FFF';
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, 25, 0, 2 * Math.PI);
+        this.ctx.fill();
+        this.ctx.strokeStyle = '#FF6B9D';
+        this.ctx.lineWidth = 3;
+        this.ctx.stroke();
     }
     
-    // ゲームループ（滑らかな移動処理）
-    startGameLoop() {
-        setInterval(() => {
-            if (this.isMoving) return; // 降下中は動かせない
+    wrapText(context, text, x, y, maxWidth, lineHeight) {
+        const words = text.split(' ');
+        let line = '';
+        let lines = [];
+        
+        for (let i = 0; i < words.length; i++) {
+            const testLine = line + words[i] + ' ';
+            const metrics = context.measureText(testLine);
+            const testWidth = metrics.width;
             
-            const speed = 1.5;
-            let moved = false;
-            
-            // X軸（左右）の移動
-            if (this.keys.ArrowLeft) { this.craneX -= speed; moved = true; }
-            if (this.keys.ArrowRight) { this.craneX += speed; moved = true; }
-            // Z軸（前後＝画面上では上下）の移動
-            if (this.keys.ArrowUp) { this.craneZ -= speed; moved = true; }
-            if (this.keys.ArrowDown) { this.craneZ += speed; moved = true; }
-            
-            // 画面外に出ないように制限
-            this.craneX = Math.max(5, Math.min(95, this.craneX));
-            this.craneZ = Math.max(5, Math.min(45, this.craneZ));
-            
-            if (moved) {
-                this.updateCraneVisual();
-                this.resultMessage.textContent = ''; // 動かしたらメッセージを消す
+            if (testWidth > maxWidth && i > 0) {
+                lines.push(line);
+                line = words[i] + ' ';
+            } else {
+                line = testLine;
             }
-        }, 20); // 約50FPSで更新
+        }
+        lines.push(line);
+        
+        const totalHeight = lines.length * lineHeight;
+        let currentY = y - (totalHeight / 2) + lineHeight / 2;
+        
+        lines.forEach(line => {
+            context.fillText(line.trim(), x, currentY);
+            currentY += lineHeight;
+        });
     }
     
-    // クレーンの見た目を更新
-    updateCraneVisual() {
-        this.craneSystem.style.left = \`\${this.craneX}%\`;
-        this.craneSystem.style.top = \`\${this.craneZ}%\`;
-    }
-    
-    // クレーンを降下させる処理
-    dropCrane() {
-        if (this.isMoving) return;
+    spin() {
+        if (this.isSpinning || this.options.length < 2) return;
         
-        this.isMoving = true;
-        this.btnGo.disabled = true;
-        this.resultMessage.textContent = 'アーム降下中...';
+        this.isSpinning = true;
+        this.startBtn.disabled = true;
+        this.resultDisplay.innerHTML = '';
         
-        // 1. ワイヤーを伸ばして下へ
-        const dropHeight = 250 - (this.craneZ * 2.5); // 奥行きによって降下距離を調整
-        this.craneWire.style.height = \`\${dropHeight}px\`;
+        // 1. 先に当たりのインデックスを決定する
+        this.targetIndex = Math.floor(Math.random() * this.options.length);
         
-        // 2. 下まで到達したらアームを閉じる
-        setTimeout(() => {
-            this.craneSystem.classList.add('closed');
+        // 2. 角度の計算
+        const sliceAngle = (2 * Math.PI) / this.options.length;
+        
+        // 当たりの項目が針（真上：-90度 = -Math.PI / 2）に来るための角度を計算
+        const randomOffset = Math.random() * sliceAngle;
+        let targetRotation = -Math.PI / 2 - (this.targetIndex * sliceAngle) - randomOffset;
+        
+        // 現在の角度から最低でも5回転は回るように設定
+        const currentMod = this.currentRotation % (2 * Math.PI);
+        const extraRotations = 5 * 2 * Math.PI;
+        
+        targetRotation = (targetRotation % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+        
+        this.finalRotation = this.currentRotation - currentMod + extraRotations + targetRotation;
+        
+        // 3. 回転アニメーションの設定（5秒かけて滑らかに止まる）
+        const spinDuration = 5000;
+        const startTime = Date.now();
+        const initialRotation = this.currentRotation;
+        
+        const spinAnimation = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / spinDuration, 1);
             
-            // 3. 確率計算（2分の1の確率でゲット）
-            const isSuccess = Math.random() < 0.5;
+            // イージング関数
+            const easeProgress = 1 - Math.pow(1 - progress, 4);
+            this.currentRotation = initialRotation + (this.finalRotation - initialRotation) * easeProgress;
             
-            if (isSuccess) {
-                // ランダムな景品をアームの中に表示
-                const randomPrize = this.prizes[Math.floor(Math.random() * this.prizes.length)];
-                this.caughtPrize.textContent = randomPrize;
-                this.craneSystem.classList.add('has-prize');
+            this.drawRoulette();
+            
+            if (elapsed < spinDuration) {
+                requestAnimationFrame(spinAnimation);
+            } else {
+                this.showResult();
             }
-            
-            // 4. 少し待ってからアームを上に戻す
-            setTimeout(() => {
-                this.craneWire.style.height = '20px'; // ワイヤーを元の長さに
-                
-                // 5. 上まで戻りきったら結果表示
-                setTimeout(() => {
-                    if (isSuccess) {
-                        this.resultMessage.style.color = '#2ecc71';
-                        this.resultMessage.textContent = '🎉 おめでとう！景品ゲット！ 🎉';
-                    } else {
-                        this.resultMessage.style.color = '#e74c3c';
-                        this.resultMessage.textContent = '💦 残念！アームがすっぽ抜けました...';
-                    }
-                    
-                    // アームを開いて初期状態に戻す
-                    this.resetCrane();
-                    
-                }, 1000); // 戻るアニメーションの時間
-                
-            }, 600); // 下で掴んでいる時間
-            
-        }, 1000); // 降りるアニメーションの時間
+        };
+        
+        spinAnimation();
     }
     
-    // クレーンを初期状態に戻す
-    resetCrane() {
-        setTimeout(() => {
-            this.craneSystem.classList.remove('closed');
-            this.craneSystem.classList.remove('has-prize');
-            this.isMoving = false;
-            this.btnGo.disabled = false;
-        }, 1500); // 結果を少し見せてからリセット
+    showResult() {
+        const selectedOption = this.options[this.targetIndex];
+        this.resultDisplay.innerHTML = `<h2>🎉 ${selectedOption} 🎉</h2>`;
+        
+        this.isSpinning = false;
+        this.startBtn.disabled = false;
+    }
+    
+    resetApp() {
+        this.options = [];
+        this.currentRotation = 0;
+        this.optionInput.value = '';
+        this.resultDisplay.innerHTML = '';
+        this.updateUI();
     }
 }
 
-// DOMが読み込まれたらアプリを起動
+// Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new CraneGameApp();
+    // 修正: グローバルからアクセスできるように window.app に代入
+    window.app = new RouletteApp();
 });
