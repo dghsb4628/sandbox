@@ -512,7 +512,7 @@ class RouletteApp {
         // Fast spinning for 3 seconds
         const spinDuration = 3000; // 3 seconds
         const startTime = Date.now();
-        const spinSpeed = 60; // increased from 30 for faster rotation
+        const spinSpeed = 150; // 速度を150に上げました（数字が大きいほど速い）
         
         const spinAnimation = () => {
             const elapsed = Date.now() - startTime;
