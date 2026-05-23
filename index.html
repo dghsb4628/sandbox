@@ -4,41 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ルーレットアプリ</title>
-    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>🎡 ルーレットアプリ</h1>
-        
-        <div class="input-section">
-            <div class="input-group">
-                <input 
-                    type="text" 
-                    id="optionInput" 
-                    placeholder="候補を入力してください"
-                    autocomplete="off"
-                >
-                <button id="addBtn" class="btn-add">追加</button>
-            </div>
-            <button id="clearBtn" class="btn-clear">リセット</button>
-        </div>
-
-        <div class="options-list">
-            <h3>候補一覧</h3>
-            <ul id="optionsList"></ul>
-        </div>
-
-        <div class="roulette-section">
-            <div class="roulette-container">
-                <canvas id="rouletteCanvas" width="400" height="400"></canvas>
-                <div class="needle"></div>
-            </div>
-            <div class="result-display" id="resultDisplay"></div>
-        </div>
-
-        <button id="startBtn" class="btn-start" disabled>スタート</button>
-    </div>
-
-    <script src="script.js"></script>
+    <div id="app"></div>
+    <script src="app.js"></script>
 </body>
 </html>
