@@ -234,7 +234,7 @@ class RouletteApp {
                 /* 結果のフォントサイズを特大にしてかわいいフォントに */
                 font-size: 3em; 
                 font-family: 'Zen Maru Gothic', sans-serif;
-                color: #ff4757;
+                color: #ffb5f3;
                 text-shadow: 2px 2px 0px rgba(255, 71, 87, 0.2);
                 animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                 word-break: break-all;
@@ -250,7 +250,7 @@ class RouletteApp {
             .btn-start {
                 width: 100%;
                 padding: 16px;
-                background: linear-gradient(135deg, #00BFFF, #1E90FF);
+                background: linear-gradient(135deg, #87CEFA, #4169E1);
                 color: white;
                 font-size: 1.5em;
                 font-family: 'Zen Maru Gothic', sans-serif;
@@ -289,14 +289,14 @@ class RouletteApp {
         
         const html = `
             <div class="container">
-                <h1>🎡 ルーレットアプリ</h1>
+                <h1>回せ！ルーレット</h1>
                 
                 <div class="input-section">
                     <div class="input-group">
                         <input 
                             type="text" 
                             id="optionInput" 
-                            placeholder="候補を入力してください"
+                            placeholder="候補を入力"
                             autocomplete="off"
                         >
                         <button id="addBtn" class="btn-add">追加</button>
@@ -305,7 +305,7 @@ class RouletteApp {
                 </div>
                 
                 <div class="options-list">
-                    <h3>候補一覧</h3>
+                    <h3>追加した項目</h3>
                     <ul id="optionsList"></ul>
                 </div>
                 
