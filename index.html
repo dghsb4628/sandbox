@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マイ日記</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📔 マイ日記</h1>
+        </header>
+
+        <main>
+            <!-- 日記入力セクション -->
+            <section class="diary-form">
+                <div class="date-display">
+                    <p id="currentDate"></p>
+                </div>
+
+                <div class="form-group">
+                    <label for="diaryTitle">タイトル</label>
+                    <input 
+                        type="text" 
+                        id="diaryTitle" 
+                        placeholder="今日のタイトルを入力してください..."
+                        maxlength="50"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="diaryContent">日記</label>
+                    <textarea 
+                        id="diaryContent" 
+                        placeholder="今日何があったか記録しましょう..."
+                        rows="10"
+                    ></textarea>
+                </div>
+
+                <button id="saveBtn" class="btn btn-primary">💾 保存</button>
+            </section>
+
+            <!-- 日記一覧セクション -->
+            <section class="diary-list">
+                <h2>📚 過去の日記</h2>
+                <div id="diariesContainer" class="diaries-container"></div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 マイ日記 - 毎日の思い出を記録しましょう</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
