@@ -24,6 +24,9 @@ class RouletteApp {
     createStyles() {
         const style = document.createElement('style');
         style.textContent = `
+            /* かわいい丸ゴシック体のフォントを読み込み */
+            @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700&display=swap');
+            
             :root {
                 --pastel-pink: #FFB3D9;
                 --pastel-blue: #B3D9FF;
@@ -62,9 +65,12 @@ class RouletteApp {
             
             h1 {
                 text-align: center;
-                color: var(--dark-gray);
+                color: #555;
                 margin-bottom: 30px;
                 font-size: 2.5em;
+                /* タイトルをかわいいフォントに */
+                font-family: 'Zen Maru Gothic', sans-serif;
+                text-shadow: 2px 2px 0px rgba(0,0,0,0.05);
             }
             
             .input-section {
@@ -80,7 +86,7 @@ class RouletteApp {
             input[type="text"] {
                 flex: 1;
                 padding: 12px 16px;
-                border: 2px solid var(--pastel-pink);
+                border: 2px solid var(--pastel-blue);
                 border-radius: 10px;
                 font-size: 1em;
                 transition: all 0.3s ease;
@@ -88,8 +94,8 @@ class RouletteApp {
             
             input[type="text"]:focus {
                 outline: none;
-                border-color: #FF69B4;
-                box-shadow: 0 0 10px rgba(255, 105, 180, 0.2);
+                border-color: #00BFFF;
+                box-shadow: 0 0 10px rgba(0, 191, 255, 0.2);
             }
             
             button {
@@ -100,16 +106,17 @@ class RouletteApp {
                 cursor: pointer;
             }
             
+            /* 追加ボタンを水色に */
             .btn-add {
                 padding: 12px 24px;
-                background: linear-gradient(135deg, var(--pastel-pink), #FFB3D9);
+                background: linear-gradient(135deg, #87CEFA, #4169E1);
                 color: white;
                 font-size: 1em;
             }
             
             .btn-add:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 5px 15px rgba(255, 105, 180, 0.3);
+                box-shadow: 0 5px 15px rgba(65, 105, 225, 0.3);
             }
             
             .btn-add:active {
@@ -136,6 +143,7 @@ class RouletteApp {
                 color: var(--dark-gray);
                 margin-bottom: 15px;
                 font-size: 1.1em;
+                font-family: 'Zen Maru Gothic', sans-serif;
             }
             
             .options-list ul {
@@ -174,14 +182,8 @@ class RouletteApp {
             }
             
             @keyframes slideIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(-10px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
             }
             
             .roulette-section {
@@ -222,40 +224,42 @@ class RouletteApp {
             
             .result-display {
                 text-align: center;
-                min-height: 80px;
+                min-height: 100px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
             }
             
             .result-display h2 {
-                font-size: 1.5em;
-                color: var(--dark-gray);
-                animation: popIn 0.5s ease;
+                /* 結果のフォントサイズを特大にしてかわいいフォントに */
+                font-size: 3em; 
+                font-family: 'Zen Maru Gothic', sans-serif;
+                color: #ff4757;
+                text-shadow: 2px 2px 0px rgba(255, 71, 87, 0.2);
+                animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                word-break: break-all;
             }
             
             @keyframes popIn {
-                0% {
-                    opacity: 0;
-                    transform: scale(0.5);
-                }
-                100% {
-                    opacity: 1;
-                    transform: scale(1);
-                }
+                0% { opacity: 0; transform: scale(0.3); }
+                80% { transform: scale(1.1); }
+                100% { opacity: 1; transform: scale(1); }
             }
             
+            /* スタートボタンも水色に */
             .btn-start {
                 width: 100%;
                 padding: 16px;
-                background: linear-gradient(135deg, var(--pastel-green), #B3FFD9);
-                color: var(--dark-gray);
-                font-size: 1.2em;
+                background: linear-gradient(135deg, #00BFFF, #1E90FF);
+                color: white;
+                font-size: 1.5em;
+                font-family: 'Zen Maru Gothic', sans-serif;
+                letter-spacing: 2px;
             }
             
             .btn-start:hover:not(:disabled) {
                 transform: translateY(-2px);
-                box-shadow: 0 8px 20px rgba(179, 255, 217, 0.4);
+                box-shadow: 0 8px 20px rgba(30, 144, 255, 0.4);
             }
             
             .btn-start:active:not(:disabled) {
@@ -263,28 +267,18 @@ class RouletteApp {
             }
             
             .btn-start:disabled {
-                opacity: 0.5;
+                background: #ccc;
+                color: #999;
+                opacity: 0.7;
                 cursor: not-allowed;
             }
             
             @media (max-width: 600px) {
-                .container {
-                    padding: 20px;
-                }
-                
-                h1 {
-                    font-size: 2em;
-                }
-                
-                .roulette-container {
-                    width: 250px;
-                    height: 250px;
-                }
-                
-                canvas {
-                    width: 250px;
-                    height: 250px;
-                }
+                .container { padding: 20px; }
+                h1 { font-size: 2em; }
+                .roulette-container { width: 250px; height: 250px; }
+                canvas { width: 250px; height: 250px; }
+                .result-display h2 { font-size: 2.2em; }
             }
         `;
         document.head.appendChild(style);
@@ -350,20 +344,9 @@ class RouletteApp {
     
     addOption() {
         const value = this.optionInput.value.trim();
-        if (value === '') {
-            alert('候補を入力してください');
-            return;
-        }
-        
-        if (this.options.includes(value)) {
-            alert('同じ候補は追加できません');
-            return;
-        }
-        
-        if (this.options.length >= 8) {
-            alert('候補は最大8個までです');
-            return;
-        }
+        if (value === '') return alert('候補を入力してください');
+        if (this.options.includes(value)) return alert('同じ候補は追加できません');
+        if (this.options.length >= 8) return alert('候補は最大8個までです');
         
         this.options.push(value);
         this.optionInput.value = '';
@@ -376,7 +359,6 @@ class RouletteApp {
     }
     
     updateUI() {
-        // Update options list
         this.optionsList.innerHTML = '';
         this.options.forEach((option, index) => {
             const li = document.createElement('li');
@@ -388,10 +370,7 @@ class RouletteApp {
             this.optionsList.appendChild(li);
         });
         
-        // Enable/disable start button
         this.startBtn.disabled = this.options.length < 2;
-        
-        // Redraw roulette
         this.drawRoulette();
         this.resultDisplay.innerHTML = '';
     }
@@ -413,10 +392,8 @@ class RouletteApp {
         const radius = 190;
         const sliceAngle = (2 * Math.PI) / this.options.length;
         
-        // Clear canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Draw circle background
         this.ctx.fillStyle = '#FFF';
         this.ctx.beginPath();
         this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
@@ -425,12 +402,10 @@ class RouletteApp {
         this.ctx.lineWidth = 2;
         this.ctx.stroke();
         
-        // Draw segments
         this.options.forEach((option, index) => {
             const startAngle = index * sliceAngle + this.currentRotation;
             const endAngle = startAngle + sliceAngle;
             
-            // Draw segment
             this.ctx.beginPath();
             this.ctx.moveTo(centerX, centerY);
             this.ctx.arc(centerX, centerY, radius, startAngle, endAngle);
@@ -441,7 +416,6 @@ class RouletteApp {
             this.ctx.lineWidth = 3;
             this.ctx.stroke();
             
-            // Draw text
             const textAngle = startAngle + sliceAngle / 2;
             const textX = centerX + Math.cos(textAngle) * (radius * 0.65);
             const textY = centerY + Math.sin(textAngle) * (radius * 0.65);
@@ -450,18 +424,15 @@ class RouletteApp {
             this.ctx.translate(textX, textY);
             this.ctx.rotate(textAngle + Math.PI / 2);
             this.ctx.fillStyle = '#333';
-            this.ctx.font = 'bold 14px sans-serif';
+            this.ctx.font = 'bold 16px "Zen Maru Gothic", sans-serif';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             
-            // Wrap text if needed
-            const maxWidth = radius * 0.4;
-            this.wrapText(this.ctx, option, 0, 0, maxWidth, 18);
+            this.wrapText(this.ctx, option, 0, 0, radius * 0.4, 20);
             
             this.ctx.restore();
         });
         
-        // Draw center circle
         this.ctx.fillStyle = '#FFF';
         this.ctx.beginPath();
         this.ctx.arc(centerX, centerY, 25, 0, 2 * Math.PI);
@@ -479,9 +450,7 @@ class RouletteApp {
         for (let i = 0; i < words.length; i++) {
             const testLine = line + words[i] + ' ';
             const metrics = context.measureText(testLine);
-            const testWidth = metrics.width;
-            
-            if (testWidth > maxWidth && i > 0) {
+            if (metrics.width > maxWidth && i > 0) {
                 lines.push(line);
                 line = words[i] + ' ';
             } else {
@@ -490,9 +459,7 @@ class RouletteApp {
         }
         lines.push(line);
         
-        const totalHeight = lines.length * lineHeight;
-        let currentY = y - (totalHeight / 2) + lineHeight / 2;
-        
+        let currentY = y - (lines.length * lineHeight / 2) + lineHeight / 2;
         lines.forEach(line => {
             context.fillText(line.trim(), x, currentY);
             currentY += lineHeight;
@@ -506,25 +473,16 @@ class RouletteApp {
         this.startBtn.disabled = true;
         this.resultDisplay.innerHTML = '';
         
-        // 1. 先に当たりのインデックスを決定する
         this.targetIndex = Math.floor(Math.random() * this.options.length);
-        
-        // 2. 角度の計算
         const sliceAngle = (2 * Math.PI) / this.options.length;
-        
-        // 当たりの項目が針（真上：-90度 = -Math.PI / 2）に来るための角度を計算
         const randomOffset = Math.random() * sliceAngle;
         let targetRotation = -Math.PI / 2 - (this.targetIndex * sliceAngle) - randomOffset;
         
-        // 現在の角度から最低でも5回転は回るように設定
         const currentMod = this.currentRotation % (2 * Math.PI);
         const extraRotations = 5 * 2 * Math.PI;
-        
         targetRotation = (targetRotation % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
-        
         this.finalRotation = this.currentRotation - currentMod + extraRotations + targetRotation;
         
-        // 3. 回転アニメーションの設定（5秒かけて滑らかに止まる）
         const spinDuration = 5000;
         const startTime = Date.now();
         const initialRotation = this.currentRotation;
@@ -532,11 +490,9 @@ class RouletteApp {
         const spinAnimation = () => {
             const elapsed = Date.now() - startTime;
             const progress = Math.min(elapsed / spinDuration, 1);
-            
-            // イージング関数
             const easeProgress = 1 - Math.pow(1 - progress, 4);
-            this.currentRotation = initialRotation + (this.finalRotation - initialRotation) * easeProgress;
             
+            this.currentRotation = initialRotation + (this.finalRotation - initialRotation) * easeProgress;
             this.drawRoulette();
             
             if (elapsed < spinDuration) {
@@ -549,12 +505,50 @@ class RouletteApp {
         spinAnimation();
     }
     
+    // ファンファーレのSEを鳴らす処理
+    playSE() {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AudioContext();
+            
+            const playTone = (freq, startTime, duration) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'triangle'; // やわらかい電子音
+                osc.frequency.value = freq;
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start(startTime);
+                // 音量調整（ポンッと鳴ってすぐ消えるように設定）
+                gain.gain.setValueAtTime(0.2, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                osc.stop(startTime + duration);
+            };
+            
+            const now = ctx.currentTime;
+            // ファ・ラ・ド・ファの順で和音を鳴らす（ファンファーレ）
+            playTone(698.46, now, 0.15);       // F5
+            playTone(880.00, now + 0.15, 0.15);  // A5
+            playTone(1046.50, now + 0.3, 0.15);  // C6
+            playTone(1396.91, now + 0.45, 0.8);  // F6
+            
+        } catch (e) {
+            console.log("お使いのブラウザは音声再生に対応していません");
+        }
+    }
+    
     showResult() {
         const selectedOption = this.options[this.targetIndex];
-        this.resultDisplay.innerHTML = `<h2>🎉 ${selectedOption} 🎉</h2>`;
+        this.resultDisplay.innerHTML = `<h2>${selectedOption}</h2>`;
         
         this.isSpinning = false;
         this.startBtn.disabled = false;
+        
+        // 止まった瞬間にSEを鳴らす
+        this.playSE();
     }
     
     resetApp() {
@@ -566,8 +560,7 @@ class RouletteApp {
     }
 }
 
-// Initialize app when DOM is ready
+// アプリ起動
 document.addEventListener('DOMContentLoaded', () => {
-    // 修正: グローバルからアクセスできるように window.app に代入
     window.app = new RouletteApp();
 });
