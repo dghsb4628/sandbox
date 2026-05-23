@@ -1,3 +1,14 @@
+:root {
+    --pastel-pink: #FFB3D9;
+    --pastel-blue: #B3D9FF;
+    --pastel-green: #B3FFD9;
+    --pastel-yellow: #FFFFB3;
+    --pastel-purple: #D9B3FF;
+    --pastel-peach: #FFD9B3;
+    --light-gray: #F5F5F5;
+    --dark-gray: #333333;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -6,260 +17,260 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #FFB3D9 0%, #B3D9FF 50%, #B3FFD9 100%);
     min-height: 100vh;
     padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .container {
-    max-width: 1000px;
-    margin: 0 auto;
     background: white;
-    border-radius: 15px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    overflow: hidden;
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 
-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 30px 20px;
+h1 {
     text-align: center;
-}
-
-header h1 {
+    color: var(--dark-gray);
+    margin-bottom: 30px;
     font-size: 2.5em;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-main {
-    padding: 40px 30px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
+/* Input Section */
+.input-section {
+    margin-bottom: 30px;
 }
 
-.diary-form {
-    background: #f8f9fa;
-    padding: 30px;
+.input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+#optionInput {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid var(--pastel-pink);
     border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.date-display {
-    background: white;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    border-left: 4px solid #667eea;
-}
-
-.date-display p {
-    font-size: 1.2em;
-    color: #333;
-    font-weight: 600;
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #333;
-    font-size: 1.1em;
-}
-
-.form-group input,
-.form-group textarea {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-family: inherit;
     font-size: 1em;
-    transition: border-color 0.3s;
+    transition: all 0.3s ease;
 }
 
-.form-group input:focus,
-.form-group textarea:focus {
+#optionInput:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #FF69B4;
+    box-shadow: 0 0 10px rgba(255, 105, 180, 0.2);
 }
 
-.form-group textarea {
-    resize: vertical;
-    min-height: 150px;
-}
-
-.btn {
-    width: 100%;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1.1em;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.btn-add {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, var(--pastel-pink), #FFB3D9);
     color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-.btn-primary:hover {
+.btn-add:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 5px 15px rgba(255, 105, 180, 0.3);
 }
 
-.btn-primary:active {
+.btn-add:active {
     transform: translateY(0);
 }
 
-.diary-list {
-    background: #f8f9fa;
-    padding: 30px;
+.btn-clear {
+    width: 100%;
+    padding: 10px;
+    background: #E8E8E8;
+    color: var(--dark-gray);
+    border: none;
     border-radius: 10px;
-}
-
-.diary-list h2 {
-    margin-bottom: 20px;
-    color: #333;
-    font-size: 1.5em;
-}
-
-.diaries-container {
-    max-height: 600px;
-    overflow-y: auto;
-}
-
-.diary-item {
-    background: white;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 8px;
-    border-left: 4px solid #667eea;
-    cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.diary-item:hover {
-    transform: translateX(5px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
-}
-
-.diary-date {
     font-size: 0.9em;
-    color: #999;
-    margin-bottom: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-.diary-title {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 8px;
+.btn-clear:hover {
+    background: #D0D0D0;
+}
+
+/* Options List */
+.options-list {
+    margin-bottom: 30px;
+}
+
+.options-list h3 {
+    color: var(--dark-gray);
+    margin-bottom: 15px;
     font-size: 1.1em;
 }
 
-.diary-preview {
-    color: #666;
-    font-size: 0.95em;
-    line-height: 1.4;
-    max-height: 60px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.diary-actions {
-    margin-top: 10px;
+#optionsList {
+    list-style: none;
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
 }
 
-.btn-small {
-    padding: 6px 12px;
-    font-size: 0.9em;
+.option-tag {
+    background: linear-gradient(135deg, var(--pastel-blue), #B3D9FF);
+    color: var(--dark-gray);
+    padding: 8px 16px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    animation: slideIn 0.3s ease;
+}
+
+.option-tag button {
+    background: rgba(255, 255, 255, 0.6);
     border: none;
-    border-radius: 5px;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
     cursor: pointer;
-    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-weight: bold;
+    color: var(--dark-gray);
 }
 
-.btn-edit {
-    background: #667eea;
-    color: white;
-    flex: 1;
+.option-tag button:hover {
+    background: rgba(255, 255, 255, 0.9);
 }
 
-.btn-edit:hover {
-    background: #5568d3;
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.btn-delete {
-    background: #ff6b6b;
-    color: white;
-    flex: 1;
+/* Roulette Section */
+.roulette-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px;
 }
 
-.btn-delete:hover {
-    background: #ff5252;
+.roulette-container {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    margin-bottom: 30px;
 }
 
-.empty-message {
+#rouletteCanvas {
+    width: 300px;
+    height: 300px;
+    display: block;
+    border-radius: 50%;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+}
+
+.needle {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-top: 30px solid #FF6B9D;
+    z-index: 10;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.result-display {
     text-align: center;
-    color: #999;
-    padding: 30px 20px;
-    font-style: italic;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-footer {
-    background: #f8f9fa;
-    padding: 20px;
-    text-align: center;
-    color: #999;
-    border-top: 1px solid #e0e0e0;
+.result-display h2 {
+    font-size: 1.5em;
+    color: var(--dark-gray);
+    animation: popIn 0.5s ease;
 }
 
-/* スクロールバーのスタイル */
-.diaries-container::-webkit-scrollbar {
-    width: 8px;
+@keyframes popIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
-.diaries-container::-webkit-scrollbar-track {
-    background: #f1f1f1;
+/* Buttons */
+.btn-start {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--pastel-green), #B3FFD9);
+    color: var(--dark-gray);
+    border: none;
+    border-radius: 10px;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-.diaries-container::-webkit-scrollbar-thumb {
-    background: #667eea;
-    border-radius: 4px;
+.btn-start:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(179, 255, 217, 0.4);
 }
 
-.diaries-container::-webkit-scrollbar-thumb:hover {
-    background: #764ba2;
+.btn-start:active:not(:disabled) {
+    transform: translateY(0);
 }
 
-/* レスポンシブ対応 */
-@media (max-width: 768px) {
-    main {
-        grid-template-columns: 1fr;
-        gap: 20px;
+.btn-start:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .container {
+        padding: 20px;
     }
 
-    header h1 {
+    h1 {
         font-size: 2em;
     }
 
-    main {
-        padding: 20px 15px;
+    .roulette-container {
+        width: 250px;
+        height: 250px;
     }
 
-    .diary-form,
-    .diary-list {
-        padding: 20px;
+    #rouletteCanvas {
+        width: 250px;
+        height: 250px;
     }
 }

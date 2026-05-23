@@ -1,151 +1,272 @@
-// 日付をフォーマットする関数
-function formatDate(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
-    const weekDay = weekDays[date.getDay()];
-    return `${year}年${month}月${day}日（${weekDay}）`;
-}
+// Pastel Colors for roulette segments
+const PASTEL_COLORS = [
+    '#FFB3D9', // Pink
+    '#B3D9FF', // Blue
+    '#B3FFD9', // Green
+    '#FFFFB3', // Yellow
+    '#D9B3FF', // Purple
+    '#FFD9B3', // Peach
+    '#C9FFB3', // Light Green
+    '#FFB3E5', // Magenta
+];
 
-// 現在の日付を表示
-function displayCurrentDate() {
-    const currentDate = new Date();
-    document.getElementById('currentDate').textContent = formatDate(currentDate);
-}
-
-// ローカルストレージから日記を取得
-function getDiariesFromStorage() {
-    const diaries = localStorage.getItem('diaries');
-    return diaries ? JSON.parse(diaries) : [];
-}
-
-// ローカルストレージに日記を保存
-function saveDiariesToStorage(diaries) {
-    localStorage.setItem('diaries', JSON.stringify(diaries));
-}
-
-// 日記を保存
-function saveDiary() {
-    const title = document.getElementById('diaryTitle').value.trim();
-    const content = document.getElementById('diaryContent').value.trim();
-
-    if (!title || !content) {
-        alert('タイトルと日記の内容を入力してください');
-        return;
+class RouletteApp {
+    constructor() {
+        this.options = [];
+        this.isSpinning = false;
+        this.currentRotation = 0;
+        
+        this.optionInput = document.getElementById('optionInput');
+        this.addBtn = document.getElementById('addBtn');
+        this.clearBtn = document.getElementById('clearBtn');
+        this.optionsList = document.getElementById('optionsList');
+        this.startBtn = document.getElementById('startBtn');
+        this.canvas = document.getElementById('rouletteCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.resultDisplay = document.getElementById('resultDisplay');
+        
+        this.initEventListeners();
+        this.drawRoulette();
     }
-
-    const diaries = getDiariesFromStorage();
-    const today = new Date();
-    const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
-    // 今日の日記があるか確認（更新の場合）
-    const existingIndex = diaries.findIndex(diary => diary.date === dateKey);
-
-    const newDiary = {
-        id: existingIndex >= 0 ? diaries[existingIndex].id : Date.now(),
-        date: dateKey,
-        title: title,
-        content: content,
-        createdAt: existingIndex >= 0 ? diaries[existingIndex].createdAt : new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-    };
-
-    if (existingIndex >= 0) {
-        diaries[existingIndex] = newDiary;
-    } else {
-        diaries.unshift(newDiary);
+    
+    initEventListeners() {
+        this.addBtn.addEventListener('click', () => this.addOption());
+        this.optionInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addOption();
+        });
+        this.clearBtn.addEventListener('click', () => this.resetApp());
+        this.startBtn.addEventListener('click', () => this.spin());
     }
-
-    saveDiariesToStorage(diaries);
-    displayDiaries();
-
-    // フォームをクリア
-    document.getElementById('diaryTitle').value = '';
-    document.getElementById('diaryContent').value = '';
-
-    alert('日記を保存しました！');
-}
-
-// 日記を表示
-function displayDiaries() {
-    const diaries = getDiariesFromStorage();
-    const container = document.getElementById('diariesContainer');
-
-    if (diaries.length === 0) {
-        container.innerHTML = '<div class="empty-message">まだ日記がありません。今日の日記を書いてみましょう！</div>';
-        return;
+    
+    addOption() {
+        const value = this.optionInput.value.trim();
+        if (value === '') {
+            alert('候補を入力してください');
+            return;
+        }
+        
+        if (this.options.includes(value)) {
+            alert('同じ候補は追加できません');
+            return;
+        }
+        
+        if (this.options.length >= 8) {
+            alert('候補は最大8個までです');
+            return;
+        }
+        
+        this.options.push(value);
+        this.optionInput.value = '';
+        this.updateUI();
     }
-
-    container.innerHTML = diaries.map(diary => `
-        <div class="diary-item" onclick="loadDiary('${diary.id}')">
-            <div class="diary-date">${formatDate(new Date(diary.date + 'T00:00:00'))}</div>
-            <div class="diary-title">${escapeHtml(diary.title)}</div>
-            <div class="diary-preview">${escapeHtml(diary.content)}</div>
-            <div class="diary-actions">
-                <button class="btn-small btn-edit" onclick="loadDiary('${diary.id}'); event.stopPropagation();">編集</button>
-                <button class="btn-small btn-delete" onclick="deleteDiary('${diary.id}'); event.stopPropagation();">削除</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-// 日記を読み込む（編集用）
-function loadDiary(id) {
-    const diaries = getDiariesFromStorage();
-    const diary = diaries.find(d => d.id == id);
-
-    if (diary) {
-        document.getElementById('diaryTitle').value = diary.title;
-        document.getElementById('diaryContent').value = diary.content;
-        // ページの上部にスクロール
-        document.querySelector('.diary-form').scrollIntoView({ behavior: 'smooth' });
+    
+    removeOption(index) {
+        this.options.splice(index, 1);
+        this.updateUI();
+    }
+    
+    updateUI() {
+        // Update options list
+        this.optionsList.innerHTML = '';
+        this.options.forEach((option, index) => {
+            const li = document.createElement('li');
+            li.className = 'option-tag';
+            li.innerHTML = `
+                ${option}
+                <button onclick="app.removeOption(${index})">×</button>
+            `;
+            this.optionsList.appendChild(li);
+        });
+        
+        // Enable/disable start button
+        this.startBtn.disabled = this.options.length < 2;
+        
+        // Redraw roulette
+        this.drawRoulette();
+        this.resultDisplay.innerHTML = '';
+    }
+    
+    drawRoulette() {
+        if (this.options.length === 0) {
+            this.ctx.fillStyle = '#E8E8E8';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.fillStyle = '#999';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.font = '16px sans-serif';
+            this.ctx.fillText('候補を2個以上追加してください', 200, 200);
+            return;
+        }
+        
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        const radius = 190;
+        const sliceAngle = (2 * Math.PI) / this.options.length;
+        
+        // Clear canvas
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Draw circle background
+        this.ctx.fillStyle = '#FFF';
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        this.ctx.fill();
+        this.ctx.strokeStyle = '#DDD';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+        
+        // Draw segments
+        this.options.forEach((option, index) => {
+            const startAngle = index * sliceAngle + this.currentRotation;
+            const endAngle = startAngle + sliceAngle;
+            
+            // Draw segment
+            this.ctx.beginPath();
+            this.ctx.moveTo(centerX, centerY);
+            this.ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+            this.ctx.closePath();
+            this.ctx.fillStyle = PASTEL_COLORS[index % PASTEL_COLORS.length];
+            this.ctx.fill();
+            this.ctx.strokeStyle = '#FFF';
+            this.ctx.lineWidth = 3;
+            this.ctx.stroke();
+            
+            // Draw text
+            const textAngle = startAngle + sliceAngle / 2;
+            const textX = centerX + Math.cos(textAngle) * (radius * 0.65);
+            const textY = centerY + Math.sin(textAngle) * (radius * 0.65);
+            
+            this.ctx.save();
+            this.ctx.translate(textX, textY);
+            this.ctx.rotate(textAngle + Math.PI / 2);
+            this.ctx.fillStyle = '#333';
+            this.ctx.font = 'bold 14px sans-serif';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            
+            // Wrap text if needed
+            const maxWidth = radius * 0.4;
+            this.wrapText(this.ctx, option, 0, 0, maxWidth, 18);
+            
+            this.ctx.restore();
+        });
+        
+        // Draw center circle
+        this.ctx.fillStyle = '#FFF';
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, 25, 0, 2 * Math.PI);
+        this.ctx.fill();
+        this.ctx.strokeStyle = '#FF6B9D';
+        this.ctx.lineWidth = 3;
+        this.ctx.stroke();
+    }
+    
+    wrapText(context, text, x, y, maxWidth, lineHeight) {
+        const words = text.split(' ');
+        let line = '';
+        let lines = [];
+        
+        for (let i = 0; i < words.length; i++) {
+            const testLine = line + words[i] + ' ';
+            const metrics = context.measureText(testLine);
+            const testWidth = metrics.width;
+            
+            if (testWidth > maxWidth && i > 0) {
+                lines.push(line);
+                line = words[i] + ' ';
+            } else {
+                line = testLine;
+            }
+        }
+        lines.push(line);
+        
+        const totalHeight = lines.length * lineHeight;
+        let currentY = y - (totalHeight / 2) + lineHeight / 2;
+        
+        lines.forEach(line => {
+            context.fillText(line.trim(), x, currentY);
+            currentY += lineHeight;
+        });
+    }
+    
+    spin() {
+        if (this.isSpinning || this.options.length < 2) return;
+        
+        this.isSpinning = true;
+        this.startBtn.disabled = true;
+        this.resultDisplay.innerHTML = '';
+        
+        // Fast spinning for 3 seconds
+        const spinDuration = 3000; // 3 seconds
+        const startTime = Date.now();
+        const spinSpeed = 30; // rotations
+        
+        const spinAnimation = () => {
+            const elapsed = Date.now() - startTime;
+            
+            if (elapsed < spinDuration) {
+                this.currentRotation += (spinSpeed * 2 * Math.PI) / 1000 * 0.016; // smooth rotation
+                this.drawRoulette();
+                requestAnimationFrame(spinAnimation);
+            } else {
+                // After 3 seconds, slow down for 2 seconds
+                this.slowDownSpin();
+            }
+        };
+        
+        spinAnimation();
+    }
+    
+    slowDownSpin() {
+        const slowDuration = 2000; // 2 seconds
+        const startTime = Date.now();
+        const finalRotation = Math.random() * 2 * Math.PI;
+        const initialRotation = this.currentRotation;
+        
+        const slowAnimation = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / slowDuration, 1);
+            
+            // Ease out cubic for deceleration
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            this.currentRotation = initialRotation + (finalRotation - initialRotation) * easeProgress;
+            
+            this.drawRoulette();
+            
+            if (elapsed < slowDuration) {
+                requestAnimationFrame(slowAnimation);
+            } else {
+                this.showResult();
+            }
+        };
+        
+        slowAnimation();
+    }
+    
+    showResult() {
+        // Calculate which option is at the top (needle position)
+        const sliceAngle = (2 * Math.PI) / this.options.length;
+        const normalizedRotation = ((this.currentRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+        const selectedIndex = Math.floor((2 * Math.PI - normalizedRotation) / sliceAngle) % this.options.length;
+        const selectedOption = this.options[selectedIndex];
+        
+        this.resultDisplay.innerHTML = `<h2>🎉 ${selectedOption} 🎉</h2>`;
+        
+        this.isSpinning = false;
+        this.startBtn.disabled = false;
+    }
+    
+    resetApp() {
+        this.options = [];
+        this.currentRotation = 0;
+        this.optionInput.value = '';
+        this.resultDisplay.innerHTML = '';
+        this.updateUI();
     }
 }
 
-// 日記を削除
-function deleteDiary(id) {
-    if (confirm('この日記を削除しますか？')) {
-        let diaries = getDiariesFromStorage();
-        diaries = diaries.filter(diary => diary.id != id);
-        saveDiariesToStorage(diaries);
-        displayDiaries();
-        alert('日記を削除しました。');
-    }
-}
-
-// HTMLをエスケープ（XSS対策）
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, m => map[m]);
-}
-
-// イベントリスナーの設定
+// Initialize app when DOM is ready
+let app;
 document.addEventListener('DOMContentLoaded', () => {
-    displayCurrentDate();
-    displayDiaries();
-
-    // 保存ボタンのクリックイベント
-    document.getElementById('saveBtn').addEventListener('click', saveDiary);
-
-    // Enterキーでの保存（Ctrl+Enter）
-    document.getElementById('diaryContent').addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.key === 'Enter') {
-            saveDiary();
-        }
-    });
-
-    // 毎日午前0時に日付を更新
-    setInterval(() => {
-        const now = new Date();
-        if (now.getHours() === 0 && now.getMinutes() === 0) {
-            displayCurrentDate();
-        }
-    }, 60000); // 1分ごとにチェック
+    app = new RouletteApp();
 });
