@@ -506,10 +506,13 @@ class RouletteApp {
         this.startBtn.disabled = true;
         this.resultDisplay.innerHTML = '';
         
+        // Store the target index before spinning
+        this.targetIndex = Math.floor(Math.random() * this.options.length);
+        
         // Fast spinning for 3 seconds
         const spinDuration = 3000; // 3 seconds
         const startTime = Date.now();
-        const spinSpeed = 30; // rotations
+        const spinSpeed = 60; // increased from 30 for faster rotation
         
         const spinAnimation = () => {
             const elapsed = Date.now() - startTime;
@@ -530,7 +533,13 @@ class RouletteApp {
     slowDownSpin() {
         const slowDuration = 2000; // 2 seconds
         const startTime = Date.now();
-        const finalRotation = Math.random() * 2 * Math.PI;
+        
+        // Calculate the target rotation to land on the needle
+        const sliceAngle = (2 * Math.PI) / this.options.length;
+        // The needle is at the top (0 radians), so we need the segment to point there
+        // Segment 0 should point to top: finalRotation = 0
+        // Segment targetIndex should point to top: finalRotation = -targetIndex * sliceAngle
+        const finalRotation = -this.targetIndex * sliceAngle;
         const initialRotation = this.currentRotation;
         
         const slowAnimation = () => {
@@ -554,12 +563,7 @@ class RouletteApp {
     }
     
     showResult() {
-        // Calculate which option is at the top (needle position)
-        const sliceAngle = (2 * Math.PI) / this.options.length;
-        const normalizedRotation = ((this.currentRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-        const selectedIndex = Math.floor((2 * Math.PI - normalizedRotation) / sliceAngle) % this.options.length;
-        const selectedOption = this.options[selectedIndex];
-        
+        const selectedOption = this.options[this.targetIndex];
         this.resultDisplay.innerHTML = `<h2>🎉 ${selectedOption} 🎉</h2>`;
         
         this.isSpinning = false;
