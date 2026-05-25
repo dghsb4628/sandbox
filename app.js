@@ -45,7 +45,7 @@ class RouletteApp {
             }
             
             body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                font-family: 'Zen Maru Gothic', sans-serif;
                 background: linear-gradient(135deg, #FFB3D9 0%, #B3D9FF 50%, #B3FFD9 100%);
                 min-height: 100vh;
                 padding: 20px;
@@ -89,6 +89,7 @@ class RouletteApp {
                 border: 2px solid var(--pastel-blue);
                 border-radius: 10px;
                 font-size: 1em;
+                font-family: 'Zen Maru Gothic', sans-serif;
                 transition: all 0.3s ease;
             }
             
@@ -104,6 +105,7 @@ class RouletteApp {
                 border-radius: 10px;
                 font-weight: bold;
                 cursor: pointer;
+                font-family: 'Zen Maru Gothic', sans-serif;
             }
             
             /* 追加ボタンを水色に */
@@ -162,6 +164,7 @@ class RouletteApp {
                 align-items: center;
                 gap: 8px;
                 font-weight: 500;
+                font-family: 'Zen Maru Gothic', sans-serif;
                 animation: slideIn 0.3s ease;
             }
             
@@ -175,6 +178,7 @@ class RouletteApp {
                 font-weight: bold;
                 color: var(--dark-gray);
                 padding: 0;
+                font-family: 'Zen Maru Gothic', sans-serif;
             }
             
             .option-tag button:hover {
@@ -382,7 +386,7 @@ class RouletteApp {
             this.ctx.fillStyle = '#999';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
-            this.ctx.font = '16px sans-serif';
+            this.ctx.font = 'bold 16px "Zen Maru Gothic", sans-serif';
             this.ctx.fillText('候補を2個以上追加してください', 200, 200);
             return;
         }
