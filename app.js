@@ -424,7 +424,7 @@ class RouletteApp {
             this.ctx.translate(textX, textY);
             this.ctx.rotate(textAngle + Math.PI / 2);
             this.ctx.fillStyle = '#333';
-            this.ctx.font = 'bold 16px "Zen Maru Gothic", sans-serif';
+            this.ctx.font = 'bold 32px "Zen Maru Gothic", sans-serif';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             
